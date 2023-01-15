@@ -98,7 +98,7 @@ int parseSegment(FILE *fp, DataObj *data) {
 	int strres = readStringDelim(fp, '[', str);
 	// this is a mess but avoids unecessary calls to strtol
 
-	// printf("string: %s\n", str);
+	// if (strres != 2) printf("string: '%s' res: %d *str: %d\n", str, strres, (int)*str); else printf("list\n");
 	if (strres == 2) { // read '['
 		data->type = LIST;
 		data->info = parseList(fp);
@@ -107,7 +107,7 @@ int parseSegment(FILE *fp, DataObj *data) {
 			data->type = EMPTY;
 			data->info = NULL;
 		} else if (strres == 1) { // entire line is empty
-			// printf("Returning as empty line\n");
+			printf("Returning as empty line\n");
 			return 2;
 		}
 	} else {
@@ -118,8 +118,6 @@ int parseSegment(FILE *fp, DataObj *data) {
 		} else {
 			if (*endptr == '.') {
 				data->type = INT_VERSION;
-				// printf("%s-----skjdkasjdhk\n", str);
-				// DOES THIS WORK????????? incomplete
 				data->info = strndup(str, BUFFER_SIZE);
 			} else {
 				data->type = INT;
@@ -146,7 +144,10 @@ DataObjArray *parseLine(FILE *fp) {
 		len++;
 		res = parseSegment(fp, &arr[len]);
 	} while (res == 0);
-	if (res == 2) { // empty line
+	if (res == 1) {
+		len++;
+		res = parseSegment(fp, &arr[len]);
+	} else if (res == 2) { // empty line
 		return NULL;
 	}
 	DataObjArray *final = malloc(sizeof(DataObjArray));
@@ -219,3 +220,7 @@ void dumpDataObjArray(DataObjArray * data, int depth) {
 	printSpace(depth);
 	printf("[--------------[%d]-[%d]\n", depth, i);
 }
+
+// FIXED current issue: example last fields of i3 and dunst not showing up (normal end of line)
+// also, several lines are being treated as one, for example background and dunst
+// end of list mixed with end of line is fucking everything up
