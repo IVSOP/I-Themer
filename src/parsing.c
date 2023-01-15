@@ -47,11 +47,10 @@ int readStringDelim(FILE *fp, char delim, char *buffer) {
 }
 
 // this is pretty much a copy of parseSegment, got lazy
+// are the outputs of this correct??
 int parseSegmentList(FILE *fp, DataObj *data) {
-	// printf("string:%s\n", str);
 	char str[BUFFER_SIZE], *endptr;
 	int strres = readStringDelim(fp, ']', str);
-	// this is a mess but avoids unecessary calls to strtol
 	if (*str == '[') {
 		data->type = LIST;
 		data->info = parseList(fp);
@@ -73,7 +72,6 @@ int parseSegmentList(FILE *fp, DataObj *data) {
 			}
 		}
 	}
-	// printf("returning with type %d\n", data.type);
 	return strres;
 }
 
@@ -93,24 +91,27 @@ void *parseList(FILE *fp) {
 	return final;
 }
 
-// returns 1 if line is empty
+// returns 2 if line is empty
+// 1 if reached end of line
 int parseSegment(FILE *fp, DataObj *data) {
-	// printf("string:%s\n", str);
 	char str[BUFFER_SIZE], *endptr;
-	long int res = readStringDelim(fp, '[', str);
+	int strres = readStringDelim(fp, '[', str);
 	// this is a mess but avoids unecessary calls to strtol
-	if (res == 2) {
+
+	// printf("string: %s\n", str);
+	if (strres == 2) { // read '['
 		data->type = LIST;
 		data->info = parseList(fp);
 	} else if (*str == '\0') {
-		if (res == 3) { // empty field
+		if (strres == 3) { // empty field
 			data->type = EMPTY;
 			data->info = NULL;
-		} else { // entire line is empty
-			return 1;
+		} else if (strres == 1) { // entire line is empty
+			// printf("Returning as empty line\n");
+			return 2;
 		}
 	} else {
-		res = strtol(str, &endptr, 10);
+		long int res = strtol(str, &endptr, 10);
 		if (endptr == str) { // read string or other
 			data->type = STRING;
 			data->info = strndup(str, BUFFER_SIZE);
@@ -126,7 +127,11 @@ int parseSegment(FILE *fp, DataObj *data) {
 			}
 		}
 	}
-	// printf("returning with type %d\n", data.type);
+	if (strres == 1) { // normal end of line
+		// printf("returning as normal end of line\n");
+		return 1;
+	}
+	// printf("Returning normally\n");
 	return 0;
 }
 
@@ -141,7 +146,7 @@ DataObjArray *parseLine(FILE *fp) {
 		len++;
 		res = parseSegment(fp, &arr[len]);
 	} while (res == 0);
-	if (len == 0 && res == 1) { // empty line
+	if (res == 2) { // empty line
 		return NULL;
 	}
 	DataObjArray *final = malloc(sizeof(DataObjArray));
