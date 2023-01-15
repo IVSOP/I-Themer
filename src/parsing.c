@@ -89,6 +89,7 @@ void *parseList(FILE *fp) {
 	final->len = len;
 	final->arr = malloc(len*sizeof(DataObj));
 	final->arr = memcpy(final->arr, arr, len*sizeof(DataObj));
+	fgetc(fp); // SKIP OVER ';' THAT COMES AFTER ']'
 	return final;
 }
 
@@ -98,15 +99,16 @@ int parseSegment(FILE *fp, DataObj *data) {
 	char str[BUFFER_SIZE], *endptr;
 	long int res = readStringDelim(fp, '[', str);
 	// this is a mess but avoids unecessary calls to strtol
-	printf("IS THIS EMPTY? '%s'\n", str);
 	if (res == 2) {
 		data->type = LIST;
 		data->info = parseList(fp);
 	} else if (*str == '\0') {
-		data->type = EMPTY;
-		printf("yes");
-		data->info = NULL;
-		return 1;
+		if (res == 3) { // empty field
+			data->type = EMPTY;
+			data->info = NULL;
+		} else { // entire line is empty
+			return 1;
+		}
 	} else {
 		res = strtol(str, &endptr, 10);
 		if (endptr == str) { // read string or other
@@ -200,7 +202,7 @@ void dumpDataObjArray(DataObjArray * data, int depth) {
 		printf("%d-", i);
 		if (type == INT) {
 			printf("int: %ld\n", (long int)tmp->info);
-		} else if (type == STRING || type == EMPTY) {
+		} else if (type == STRING) {
 			printf("string: %s\n", (char *)tmp->info);
 		} else if (type == LIST) {
 			printf("list:\n");
