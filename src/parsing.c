@@ -72,51 +72,50 @@ char *custom_strdup(char *src, int len) {
 DataObjArray *parseLineString(char *str, size_t strlen) {
 	DataObj arr[DATA_BUFF_SIZE], *tmp;
 	int len = 0, // number of structs in the array
-	nested, i;
+	i;
 	char chr;
 	str[strlen-1] = ';';
 
 	for (i = 0; i < (int)strlen; i++) {
-		printf("current string: %s (%d)", str + i, i);
+		tmp = &arr[len];
+		// printf("current string: %s (%d)", str + i, i);
 		chr = str[i];
 		if (chr == '[') {
-			// printf("lists not implemented, setting as empty\n");
-			printf(" is a list\n");
-			tmp = &arr[len];
-			tmp->type = EMPTY;
-			tmp->info = NULL;
-			len++;
-			for(; i < (int)strlen && str[i] != ']'; i++);
-			i++;
+			int nested = 1, j;
+			for (j = i + 1; j < (int)strlen && nested > 0; j++) {
+				if (str[j] == '[') nested++;
+				else if (str[j] == ']') nested--;
+			}
+			// at his stage, str[i until j] has the string that needs to be parsed into a list
+			// str[i] is at '[' and str[j] is at ';' after ']'
+			tmp->type = LIST;
+			tmp->info = parseLineString(str + i + 1, j - i - 1);
+			i = j;
 		} else if (chr == ';') {
-			printf(" is empty\n");
-			tmp = &arr[len];
 			tmp->type = EMPTY;
 			tmp->info = NULL;
-			len++;
 		} else {
-			tmp = &arr[len];
-			len++;
 			char *endptr;
 			long int res = strtol(str + i, &endptr, 10);
 			if (endptr != str + i) { // did read int
 				if (*endptr == '.') {
-					printf(" is a version\n");
+					int offset = 0;
 					tmp->type = INT_VERSION;
-					tmp->info = readString(str + i, &i);
+					tmp->info = readString(str + i, &offset);
+					i += offset;
 				} else {
-					printf(" is an int\n");
 					tmp->type = INT;
 					tmp->info = (void *) res;
 					i++;
 				}
 			} else {
-				printf(" is a string\n");
+				int offset = 0;
 				tmp->type = STRING;
-				tmp->info = readString(str + i, &i);
-				i--;
+				tmp->info = readString(str + i, &offset);
+				i += offset - 1;
 			}
 		}
+		len++;
 	}
 
 	DataObjArray *final = malloc(sizeof(DataObjArray));
@@ -141,10 +140,7 @@ DataObjArray *parseLine(FILE *fp) {
 		return NULL;
 	}
 
-	printf("line: %s(%ld)\n", linestr, len_chars);
 	DataObjArray *res = parseLineString(linestr, len_chars);
-	dumpDataObjArray(res, 0);
-	exit(1);
 
 	free(linestr);
 	return res;
