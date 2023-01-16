@@ -21,31 +21,27 @@ struct Data {
 void *parseList(FILE *fp);
 char *custom_strdup(char *src, int len);
 
-// NONE OF THESE CURRENTLY CHECK FOR EOF
-// will return 1 on newline
-int readString(FILE *fp, char *buffer) {
-	int i, chr;
-    for (i = 0; (chr = fgetc(fp)) != ';' && chr != '\n'; i++) {
-		buffer[i] = chr;
-	}
-	buffer[i] = '\0';
-	if (chr == '\n') return 1;
-	if (chr == ';') return 3;
-	return 0;
+char *readString(char *str, int *len) {
+	int i = *len;
+	for (i = 0; str[i] != ';'; i++);
+	str[i] = '\0';
+	i++;
+	(*len) += i;
+	char * res = malloc(sizeof(char) * i);
+	return memcpy(res, str, i);
 }
 
-// same as above but will return 2 if it finds delim
-int readStringDelim(FILE *fp, char delim, char *buffer) {
-	int i, chr;
-    for (i = 0; (chr = fgetc(fp)) != ';' && chr != '\n' && chr != delim; i++) {
-		buffer[i] = chr;
-	}
-	buffer[i] = '\0';
-	if (chr == '\n') return 1;
-	if ((char)chr == delim) return 2;
-	if (chr == ';') return 3;
-	return 0;
-}
+// int readStringDelim(FILE *fp, char delim, char *buffer) {
+// 	int i, chr;
+//     for (i = 0; (chr = fgetc(fp)) != ';' && chr != '\n' && chr != delim; i++) {
+// 		buffer[i] = chr;
+// 	}
+// 	buffer[i] = '\0';
+// 	if (chr == '\n') return 1;
+// 	if ((char)chr == delim) return 2;
+// 	if (chr == ';') return 3;
+// 	return 0;
+// }
 
 inline char get_last_char(char *str) {
 	while (*str != '\0') str++;
@@ -71,81 +67,56 @@ char *custom_strdup(char *src, int len) {
 	return memcpy(dest, src, len);
 }
 
-// fills a DataObj * with the respective data
-// does not take int oconsideration completely empty line
-void parseSegment(char *str, DataObj *data, int len) {
-	if (len == 0) {
-		data->type = EMPTY;
-		data->info = NULL;
-	} else {
-		char *endptr;
-		long int res = strtol(str, &endptr, 10);
+// takes in string for (what is thinks) is the entire line and turns it into DataObjArray *, mallocing as needed
+// the string includes the \n in [strlen - 1]
+DataObjArray *parseLineString(char *str, size_t strlen) {
+	DataObj arr[DATA_BUFF_SIZE], *tmp;
+	int len = 0, // number of structs in the array
+	nested, i;
+	char chr;
+	str[strlen-1] = ';';
 
-		if (endptr != str) { // did read int
-			if (*endptr == '.') {
-				data->type = INT_VERSION;
-				data->info = custom_strdup(str, len);
-			} else {
-				data->type = INT;
-				data->info = (void *) res;
-			}
-		} else {
-			if (*endptr == '[') exit(15); // should never happen
-			else {
-				data->type = STRING;
-				data->info = custom_strdup(str, len);
-			}
-		}
-	}
-}
-
-
-// will malloc everything for you, with a pointer to an array of DataObj that
-// contains info on an entire line
-// will return NULL if it reads nothing (like if it is on an empty line)
-DataObjArray *parseLine(FILE *fp) {
-	DataObj arr[DATA_BUFF_SIZE];
-	char linestr[LINE_STR_SIZE];
-	int i, chr;
-	// this loop will check exactly which string to be sent to the segment parser,
-	// and will also check if it should be sent do the list parser
-	// this way its simple and allows to check for nested lists
-	int len = 0, nested;
-	for (i = 0; i < LINE_STR_SIZE && (chr = fgetc(fp)) != '\n'; i++) {
-		if (chr == '[') { // list
-			for (nested = 1; i < LINE_STR_SIZE && nested > 0; i++) { // for now this remains untested
-				chr = fgetc(fp);
-				linestr[i] = chr;
-				if (chr == '[') nested++;
-				else if (chr == ']') nested--;
-			}
-			chr = fgetc(fp); // char after the last ]
-			if (chr == '\n') {
-				chr = '\0';
-				break;
-			}
-		} else if (chr == ';') { // normal end of segment
-			linestr[i] = '\0';
-			parseSegment(linestr, &arr[len], i);
+	for (i = 0; i < (int)strlen; i++) {
+		printf("current string: %s (%d)", str + i, i);
+		chr = str[i];
+		if (chr == '[') {
+			// printf("lists not implemented, setting as empty\n");
+			printf(" is a list\n");
+			tmp = &arr[len];
+			tmp->type = EMPTY;
+			tmp->info = NULL;
 			len++;
-			i = -1;
+			for(; i < (int)strlen && str[i] != ']'; i++);
+			i++;
+		} else if (chr == ';') {
+			printf(" is empty\n");
+			tmp = &arr[len];
+			tmp->type = EMPTY;
+			tmp->info = NULL;
+			len++;
 		} else {
-			linestr[i] = (char)chr;
+			tmp = &arr[len];
+			len++;
+			char *endptr;
+			long int res = strtol(str + i, &endptr, 10);
+			if (endptr != str + i) { // did read int
+				if (*endptr == '.') {
+					printf(" is a version\n");
+					tmp->type = INT_VERSION;
+					tmp->info = readString(str + i, &i);
+				} else {
+					printf(" is an int\n");
+					tmp->type = INT;
+					tmp->info = (void *) res;
+					i++;
+				}
+			} else {
+				printf(" is a string\n");
+				tmp->type = STRING;
+				tmp->info = readString(str + i, &i);
+				i--;
+			}
 		}
-	}
-	if (i == LINE_STR_SIZE) {
-		printf("Line is too large, either increase LINE_STR_SIZE or make it dynamic");
-		exit(1);
-	} else if (i == 0) { // empty line
-		return NULL;
-	}
-
-	// normal end of line
-	// turn everything into do while??
-	if (chr == '\n') {
-		linestr[i] = '\0';
-		parseSegment(linestr, &arr[len], i);
-		len++;
 	}
 
 	DataObjArray *final = malloc(sizeof(DataObjArray));
@@ -153,6 +124,31 @@ DataObjArray *parseLine(FILE *fp) {
 	final->arr = malloc(len*sizeof(DataObj));
 	final->arr = memcpy(final->arr, arr, len*sizeof(DataObj));
 	return final;
+}
+
+// will malloc everything for you, with a pointer to an array of DataObj that
+// contains info on an entire line
+// will return NULL if it reads nothing (like if it is on an empty line)
+// this is not efficient at all but makes it way easier to deal with a recursive type
+// getline can be replaced by a version that uses a buffer on the stack or something idk
+DataObjArray *parseLine(FILE *fp) {
+	char *linestr = NULL;
+	size_t buffsiz = 0, len_chars = getline(&linestr, &buffsiz, fp);
+
+	// empty line
+	if (len_chars == 1) {
+		free(linestr);
+		return NULL;
+	}
+
+	printf("line: %s(%ld)\n", linestr, len_chars);
+	DataObjArray *res = parseLineString(linestr, len_chars);
+	dumpDataObjArray(res, 0);
+	exit(1);
+
+	free(linestr);
+	return res;
+	buffsiz = buffsiz;
 }
 
 Data *parseMainTable(FILE *fp) {

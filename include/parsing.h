@@ -22,7 +22,7 @@ typedef struct DataObjArray DataObjArray;
 
 typedef void freeFunc(void *);
 
-int readString(FILE *fp, char *buffer);
+char *readString(char *str, int *len);
 int readStringDelim(FILE *fp, char delim, char *buffer);
 Data *parseMainTable(FILE *);
 DataObjArray *parseLine(FILE *fp);
