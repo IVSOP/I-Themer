@@ -26,7 +26,8 @@ char *readString(char *str, int *len);
 int readStringDelim(FILE *fp, char delim, char *buffer);
 Data *parseMainTable(FILE *);
 DataObjArray *parseLine(FILE *fp);
-void freeTableData(void *);
-void dumpDataObjArray(DataObjArray *, int depth);
+void freeTableData(Data *data);
+void dumpTable(Data *data);
+void parseDependecyTables(const Data *, FILE *);
 
 #endif

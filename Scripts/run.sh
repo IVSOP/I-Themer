@@ -1,11 +1,11 @@
 #!/bin/bash
-STR="1\ndata/table.tb\n"
+
 if [ $# -eq 1 ]
 then
 	make debug -j$(nproc)
-	gdb --args themer-debug data/main_info.db 0
+	gdb --args themer-debug data/table.tb
 	
 else
 	make -j$(nproc)
-	echo -e $STR | ./themer data/main_info.db 0
+	./themer data/table.tb
 fi

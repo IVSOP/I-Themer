@@ -9,10 +9,6 @@ i3;1;apply;.config/i3/themes/i3/0/theme-0;.config/i3/themes/i3/1/theme-1;.config
 polybar:
 theme;apply
 bar;apply
-^^^^^^^^^^^^^^^FALTA ACABAR
-
-FAZER COM QUE SE TIVER SUB O PROXIMO NUMERO NO .DB VAI SER OFFSET PARA ONDE AS COISAS TAO GUARDADAS (NO DB)
-FAZER COM QUE SEJA POSSIVEL IGNORAR "\" PARA ISTO NAO FICAR TAO COMPRIDO
 
 rofi:
 dmenu-theme;1;apply;.config/i3/themes/rofi/0/dmenu-theme-0.rasi;.config/i3/themes/rofi/1/dmenu-theme-1.rasi
