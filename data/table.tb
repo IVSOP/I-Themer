@@ -1,4 +1,8 @@
 param;active;subcategories;onclick;0;1;2;...
+first;5;second;third
+
+first;5;[cgdgshfhgf;dsacas];djhghjg;edfvdc;fsccxbf;sdad
+
 background;1;;show_var;[BG/TF22.jpg;BG/TF21.jpg;BG/HorizonZD.jpg];[BG/KSP1.png;BG/KSP2.png;BG/KSP3.png;BG/KSP4.jpg]
 dunst;1;;apply;.config/i3/themes/dunst/0/dunstrc-0;.config/i3/themes/dunst/1/dunstrc-1;.config/i3/themes/dunst/2/dunstrc-2
 i3lock;1;apply;.config/i3/lock/noise_red.png;.config/i3/lock/noise_blue.png;.config/i3/lock/noise_white.png

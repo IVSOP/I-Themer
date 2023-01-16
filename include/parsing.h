@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #define BUFFER_SIZE 64
+#define LINE_STR_SIZE 256
 #define DATA_BUFF_SIZE 64
 
 typedef enum {

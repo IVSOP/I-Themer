@@ -19,6 +19,7 @@ struct Data {
 };
 
 void *parseList(FILE *fp);
+char *custom_strdup(char *src, int len);
 
 // NONE OF THESE CURRENTLY CHECK FOR EOF
 // will return 1 on newline
@@ -46,110 +47,107 @@ int readStringDelim(FILE *fp, char delim, char *buffer) {
 	return 0;
 }
 
+inline char get_last_char(char *str) {
+	while (*str != '\0') str++;
+	return *(str--);
+}
+
 // this is pretty much a copy of parseSegment, got lazy
-// are the outputs of this correct??
+// returns: 0 normally
+// 1 if end of list
+// 2 if end of list coincides with end of line
 int parseSegmentList(FILE *fp, DataObj *data) {
-	char str[BUFFER_SIZE], *endptr;
-	int strres = readStringDelim(fp, ']', str);
-	if (*str == '[') {
-		data->type = LIST;
-		data->info = parseList(fp);
-	} else if (*str == '\0') {
-		data->type = EMPTY;
-		data->info = NULL;		
-	} else {
-		long res = strtol(str, &endptr, 10);
-		if (endptr == str) { // read string or other
-			data->type = STRING;
-			data->info = strndup(str, BUFFER_SIZE);
-		} else {
-			if (*endptr == '.') {
-				data->type = INT_VERSION;
-				data->info = strndup(str, BUFFER_SIZE);
-			} else {
-				data->type = INT;
-				data->info = (void *) res;
-			}
-		}
-	}
-	return strres;
+	exit(10);
 }
 
+// NOTE: assumes it is impossible to reach EOF or empty line
+// this will probably come back to haunt me later
 void *parseList(FILE *fp) {
-	DataObj arr[DATA_BUFF_SIZE];
-	int res,  len = 0;
-	do {
-		res = parseSegmentList(fp, &arr[len]);
-		len++;
-	} while (res != 2);
-
-	DataObjArray *final = malloc(sizeof(DataObjArray));
-	final->len = len;
-	final->arr = malloc(len*sizeof(DataObj));
-	final->arr = memcpy(final->arr, arr, len*sizeof(DataObj));
-	fgetc(fp); // SKIP OVER ';' THAT COMES AFTER ']'
-	return final;
+	exit(10);
 }
 
-// returns 2 if line is empty
-// 1 if reached end of line
-int parseSegment(FILE *fp, DataObj *data) {
-	char str[BUFFER_SIZE], *endptr;
-	int strres = readStringDelim(fp, '[', str);
-	// this is a mess but avoids unecessary calls to strtol
+char *custom_strdup(char *src, int len) {
+	char *dest = malloc(sizeof(char) * len);
+	return memcpy(dest, src, len);
+}
 
-	// if (strres != 2) printf("string: '%s' res: %d *str: %d\n", str, strres, (int)*str); else printf("list\n");
-	if (strres == 2) { // read '['
-		data->type = LIST;
-		data->info = parseList(fp);
-	} else if (*str == '\0') {
-		if (strres == 3) { // empty field
-			data->type = EMPTY;
-			data->info = NULL;
-		} else if (strres == 1) { // entire line is empty
-			printf("Returning as empty line\n");
-			return 2;
-		}
+// fills a DataObj * with the respective data
+// does not take int oconsideration completely empty line
+void parseSegment(char *str, DataObj *data, int len) {
+	if (len == 0) {
+		data->type = EMPTY;
+		data->info = NULL;
 	} else {
+		char *endptr;
 		long int res = strtol(str, &endptr, 10);
-		if (endptr == str) { // read string or other
-			data->type = STRING;
-			data->info = strndup(str, BUFFER_SIZE);
-		} else {
+
+		if (endptr != str) { // did read int
 			if (*endptr == '.') {
 				data->type = INT_VERSION;
-				data->info = strndup(str, BUFFER_SIZE);
+				data->info = custom_strdup(str, len);
 			} else {
 				data->type = INT;
 				data->info = (void *) res;
 			}
+		} else {
+			if (*endptr == '[') exit(15); // should never happen
+			else {
+				data->type = STRING;
+				data->info = custom_strdup(str, len);
+			}
 		}
 	}
-	if (strres == 1) { // normal end of line
-		// printf("returning as normal end of line\n");
-		return 1;
-	}
-	// printf("Returning normally\n");
-	return 0;
 }
 
 
 // will malloc everything for you, with a pointer to an array of DataObj that
-// contain info on an entire line
+// contains info on an entire line
 // will return NULL if it reads nothing (like if it is on an empty line)
 DataObjArray *parseLine(FILE *fp) {
 	DataObj arr[DATA_BUFF_SIZE];
-	int res, len = -1;
-	do {
-		len++;
-		res = parseSegment(fp, &arr[len]);
-	} while (res == 0);
-	if (res == 1) {
-		len++;
-		res = parseSegment(fp, &arr[len]);
-	} else if (res == 2) { // empty line
+	char linestr[LINE_STR_SIZE];
+	int i, chr;
+	// this loop will check exactly which string to be sent to the segment parser,
+	// and will also check if it should be sent do the list parser
+	// this way its simple and allows to check for nested lists
+	int len = 0, nested;
+	for (i = 0; i < LINE_STR_SIZE && (chr = fgetc(fp)) != '\n'; i++) {
+		if (chr == '[') { // list
+			for (nested = 1; i < LINE_STR_SIZE && nested > 0; i++) { // for now this remains untested
+				chr = fgetc(fp);
+				linestr[i] = chr;
+				if (chr == '[') nested++;
+				else if (chr == ']') nested--;
+			}
+			chr = fgetc(fp); // char after the last ]
+			if (chr == '\n') {
+				chr = '\0';
+				break;
+			}
+		} else if (chr == ';') { // normal end of segment
+			linestr[i] = '\0';
+			parseSegment(linestr, &arr[len], i);
+			len++;
+			i = -1;
+		} else {
+			linestr[i] = (char)chr;
+		}
+	}
+	if (i == LINE_STR_SIZE) {
+		printf("Line is too large, either increase LINE_STR_SIZE or make it dynamic");
+		exit(1);
+	} else if (i == 0) { // empty line
 		return NULL;
 	}
+
+	// normal end of line
+	// turn everything into do while??
+	if (chr == '\n') {
+		linestr[i] = '\0';
+		parseSegment(linestr, &arr[len], i);
+		len++;
+	}
+
 	DataObjArray *final = malloc(sizeof(DataObjArray));
 	final->len = len;
 	final->arr = malloc(len*sizeof(DataObj));
@@ -220,7 +218,3 @@ void dumpDataObjArray(DataObjArray * data, int depth) {
 	printSpace(depth);
 	printf("[--------------[%d]-[%d]\n", depth, i);
 }
-
-// FIXED current issue: example last fields of i3 and dunst not showing up (normal end of line)
-// also, several lines are being treated as one, for example background and dunst
-// end of list mixed with end of line is fucking everything up
