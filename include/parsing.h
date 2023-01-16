@@ -28,5 +28,11 @@ DataObjArray *parseLine(FILE *fp);
 void freeTableData(Data *data);
 void dumpTable(Data *data, long int depth);
 void parseDependecyTables(const Data *, FILE *);
+DataObjArray *tableLookup(Data *data, char *str);
+int getLen(DataObjArray *data);
+void printValue(DataObj *data);
+DataObj *getDataObj(DataObjArray *data, int i);
+int getActivePerTheme(int theme);
+void *getValue(DataObj *data);
 
 #endif

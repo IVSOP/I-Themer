@@ -1,5 +1,5 @@
-#ifndef TABLES
-#define TABLES
+#ifndef ROFI
+#define ROFI
 
 #include "parsing.h"
 int mainRofiLoop(char *filename);

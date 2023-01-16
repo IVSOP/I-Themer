@@ -1,7 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "tables.h"
+#include "rofi.h"
 
+// for now filepath does nothing, it is hardcoded
 int main (int argc, char **argv) {
 	// arg 1: database location
 	if (argc == 0) {

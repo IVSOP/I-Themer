@@ -15,8 +15,6 @@ struct DataObjArray {
 
 struct Data {
 	GHashTable *main_table;
-	int n_of_themes;
-	// n_of_param; not needed since you can just get the size of the hash table
 };
 
 char *custom_strdup(char *src, int len);
@@ -177,7 +175,7 @@ Data *parseMainTable(FILE *fp) {
 		return NULL;
 	}
 	data->main_table = table;
-	data->n_of_themes = max_len-2;
+	// data->n_of_themes = max_len-2;
 	return data;
 }
 
@@ -281,4 +279,36 @@ void dumpTableEntry(gpointer key, gpointer value, gpointer user_data) {
 
 void dumpTable(Data *data, long int depth) {
 	g_hash_table_foreach(data->main_table, dumpTableEntry, (void *)depth);
+}
+
+DataObjArray *tableLookup(Data *data, char *str) {
+	return g_hash_table_lookup(data->main_table, str);
+}
+
+// incomplete
+void printValue(DataObj *data) {
+	TYPE type = data->type;
+	if (type == INT) {
+		printf("%ld", (long int)data->info);
+	} else if (type == STRING) {
+		printf("%s", (char *)data->info);
+	}
+}
+
+int getLen(DataObjArray *data) {
+	return data->len;
+}
+
+DataObj *getDataObj(DataObjArray *data, int i) {
+	if (i >= data->len) return NULL;
+	return &(data->arr)[i];
+}
+
+// TODO
+int getActivePerTheme(int theme) {
+	return -1;
+}
+
+void *getValue(DataObj *data) {
+	return data->info;
 }
