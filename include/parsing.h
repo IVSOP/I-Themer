@@ -13,7 +13,6 @@ typedef enum {
 	INT_VERSION = 2, // will get stored as string
 	EMPTY = 3,
 	LIST = 4, // stored as DataObjArray *, not as Data *
-	OFFSET = 5,
 } TYPE;
 
 typedef struct DataObj DataObj;

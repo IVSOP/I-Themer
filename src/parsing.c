@@ -140,10 +140,7 @@ DataObjArray *parseLine(FILE *fp) {
 	size_t buffsiz = 0;
 	ssize_t len_chars = getline(&linestr, &buffsiz, fp);
 
-	if (len_chars == -1) return NULL; // EOF
-
-	// empty line
-	if (len_chars == 1) {
+	if (len_chars == -1 || len_chars == 1) { // EOF and empty line, respectively (is EOF check needed??)
 		free(linestr);
 		return NULL;
 	}
@@ -158,7 +155,8 @@ DataObjArray *parseLine(FILE *fp) {
 // returns NULL on EOF
 Data *parseMainTable(FILE *fp) {
 	Data *data = malloc(sizeof(Data));
-	GHashTable * table = g_hash_table_new_full(g_str_hash, g_str_equal, free, freeTableStruct);
+	// key destroy func is NULL since they will be freed when the remaining data is freed (they are shared)
+	GHashTable * table = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, freeTableStruct);
 	DataObjArray *lineData = parseLine(fp);
 	DataObj *tmp;
 	int max_len = 0;
@@ -226,19 +224,20 @@ void freeTableStruct(void *data) {
 	DataObjArray *dataArr = (DataObjArray *)data;
 	DataObj *arr = dataArr->arr, *tmp; // what a mess
 	int i;
-	freeFunc *freeDispatchTable[] = {freeNULL, free, free, freeNULL, freeTableStruct, freeNULL};
+	freeFunc *freeDispatchTable[] = {freeNULL, free, free, freeNULL, freeTableStruct};
 	for (i = 0; i < (const int)dataArr->len; i++) {
 		tmp = &arr[i];
 		freeDispatchTable[tmp->type](tmp->info);
-		free(tmp);
 	}
-	freeTableData(dataArr->dependency_table);
+	if (dataArr->dependency_table != NULL) freeTableData((Data *)dataArr->dependency_table);
+	free(arr);
 	free(dataArr);
 }
 
 //frees Data *
 void freeTableData(Data *data) {
 	if (data != NULL) g_hash_table_destroy(data->main_table);
+	free(data);
 }
 
 void printSpace(int depth) {
