@@ -220,7 +220,7 @@ void freeNULL (void *data) {
 	return;
 }
 
-// frees DataObjArray
+// frees DataObjArray, NOT Data
 void freeTableStruct(void *data) {
 	// if (data == NULL) return;
 	DataObjArray *dataArr = (DataObjArray *)data;
@@ -262,7 +262,7 @@ void dumpDataObjArray(DataObjArray * data, long int depth) {
 			printf("string: %s\n", (char *)tmp->info);
 		} else if (type == LIST) {
 			printf("list:\n");
-			dumpDataObjArray((DataObjArray *)tmp->info, depth+1);
+			dumpDataObjArray((DataObjArray *)tmp->info, depth + 4);
 		} else if (type == EMPTY) {
 			printf("empty\n");
 		}
@@ -270,7 +270,7 @@ void dumpDataObjArray(DataObjArray * data, long int depth) {
 	if (data->dependency_table != NULL) {
 		printSpace(depth);
 		printf("Found dependency table\n");
-		dumpTableEntry(NULL, data->dependency_table, (void *)(depth + 1));
+		dumpTable((Data *)data->dependency_table, depth + 4);
 	}
 	printSpace(depth);
 	printf("[--------------[%ld]-[%d]\n", depth, i);
@@ -280,6 +280,6 @@ void dumpTableEntry(gpointer key, gpointer value, gpointer user_data) {
 	dumpDataObjArray((DataObjArray *)value, (long int)user_data);
 }
 
-void dumpTable(Data *data) {
-	g_hash_table_foreach(data->main_table, dumpTableEntry, (void *)0);
+void dumpTable(Data *data, long int depth) {
+	g_hash_table_foreach(data->main_table, dumpTableEntry, (void *)depth);
 }

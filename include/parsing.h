@@ -12,7 +12,7 @@ typedef enum {
 	STRING = 1,
 	INT_VERSION = 2, // will get stored as string
 	EMPTY = 3,
-	LIST = 4,
+	LIST = 4, // stored as DataObjArray *, not as Data *
 	OFFSET = 5,
 } TYPE;
 
@@ -27,7 +27,7 @@ int readStringDelim(FILE *fp, char delim, char *buffer);
 Data *parseMainTable(FILE *);
 DataObjArray *parseLine(FILE *fp);
 void freeTableData(Data *data);
-void dumpTable(Data *data);
+void dumpTable(Data *data, long int depth);
 void parseDependecyTables(const Data *, FILE *);
 
 #endif

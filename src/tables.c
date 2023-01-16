@@ -7,11 +7,10 @@ int mainRofiLoop(char *filename) {
 	while (fgetc(fp) != '\n'); // skip first line
 	// Data *data = getData(fp);
 	Data *data = parseMainTable(fp);
-
 	parseDependecyTables(data, fp); // prob inefficient but it works so idc
 	
-	dumpTable(data);
-	// freeTableData(data);
+	// dumpTable(data, 0);
+	freeTableData(data);
 	fclose(fp);
 	return 0;
 }
