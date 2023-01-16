@@ -2,6 +2,7 @@
 #define PARSING
 #include <stdlib.h>
 #include <stdio.h>
+#include <glib.h>
 
 #define BUFFER_SIZE 64
 #define LINE_STR_SIZE 256
@@ -15,9 +16,14 @@ typedef enum {
 	LIST = 4, // stored as DataObjArray *, not as Data *
 } TYPE;
 
+
 typedef struct DataObj DataObj;
 typedef struct Data Data;
 typedef struct DataObjArray DataObjArray;
+typedef struct {
+	int selected_theme;
+	Data *data;
+} LoopInfo;
 
 typedef void freeFunc(void *);
 
@@ -34,5 +40,7 @@ void printValue(DataObj *data);
 DataObj *getDataObj(DataObjArray *data, int i);
 int getActivePerTheme(int theme);
 void *getValue(DataObj *data);
+GHashTable *getTable(Data *data);
+void generateThemeOptions(gpointer key, gpointer value, gpointer user_data);
 
 #endif

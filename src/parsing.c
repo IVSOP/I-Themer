@@ -1,9 +1,15 @@
 #include "parsing.h"
-#include <glib.h>
+
+#define SEP1 putchar('\0')
+#define SEP2 putchar('\x1f')
 
 struct DataObj {
 	void *info;
 	TYPE type;
+};
+
+struct Data {
+	GHashTable *main_table;
 };
 
 //contains data from an entire line
@@ -11,10 +17,6 @@ struct DataObjArray {
 	DataObj *arr;
 	int len; // number of fiels so I know how many to free
 	Data * dependency_table;
-};
-
-struct Data {
-	GHashTable *main_table;
 };
 
 char *custom_strdup(char *src, int len);
@@ -311,4 +313,31 @@ int getActivePerTheme(int theme) {
 
 void *getValue(DataObj *data) {
 	return data->info;
+}
+
+// theme being browsed is passed as info
+// what to do if slect theme that was already selected?
+void generateThemeOptions(gpointer key, gpointer value, gpointer user_data) {
+	if (strcmp("color-icons", (char *)key) == 0) return;
+
+	LoopInfo *info = (LoopInfo *)user_data;
+	DataObj *obj = ((DataObjArray *)value)->arr;
+	DataObj *colorArr = (tableLookup(info->data, "color-icons"))->arr;
+	char home[BUFFER_SIZE];
+	snprintf(home, BUFFER_SIZE, "%s", getenv("HOME"));
+
+	printf("%s", (char *)(obj[0].info));
+	SEP1;
+	long int theme = (long int)(obj[1].info);
+	printf("info");
+	SEP2;
+	printf("%d", info->selected_theme);
+	SEP2;
+	printf("icon");
+	SEP2;
+	printf("%s/%s\n", home, (char *)(colorArr[theme + 1].info));
+}
+
+GHashTable *getTable(Data *data) {
+	return data->main_table;
 }
