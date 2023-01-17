@@ -10,6 +10,7 @@ struct DataObj {
 
 struct Data {
 	GHashTable *main_table;
+	GPtrArray *dependency_array;
 };
 
 //contains data from an entire line
@@ -27,7 +28,7 @@ char *custom_strdup(char *src, int len);
 void freeTableStruct(void *data);
 void dumpDataObjArray(DataObjArray *, long int depth);
 void dumpTableEntry(gpointer key, gpointer value, gpointer user_data);
-
+void executeOnclick(Data * data, DataObjArray *dataobjarray, Theme *new_theme, Theme *original_theme);
 
 char *readString(char *str, int *len) {
 	int i;
@@ -63,20 +64,6 @@ inline char get_last_char(char *str) {
 	return *(str--);
 }
 
-// this is pretty much a copy of parseSegment, got lazy
-// returns: 0 normally
-// 1 if end of list
-// 2 if end of list coincides with end of line
-int parseSegmentList(FILE *fp, DataObj *data) {
-	exit(10);
-}
-
-// NOTE: assumes it is impossible to reach EOF or empty line
-// this will probably come back to haunt me later
-void *parseList(FILE *fp) {
-	exit(10);
-}
-
 char *custom_strdup(char *src, int len) {
 	char *dest = malloc(sizeof(char) * len);
 	return memcpy(dest, src, len);
@@ -104,7 +91,7 @@ DataObjArray *parseLineString(char *str, ssize_t strlen) {
 			// at his stage, str[i until j] has the string that needs to be parsed into a list
 			// str[i] is at '[' and str[j] is at ';' after ']'
 			tmp->type = LIST;
-			tmp->info = parseLineString(str + i + 1, j - i - 1);
+			tmp->info = parseLineString(str + i + 1, j - i - 1); // wtf???
 			i = j;
 		} else if (chr == ';') {
 			tmp->type = EMPTY;
@@ -116,11 +103,12 @@ DataObjArray *parseLineString(char *str, ssize_t strlen) {
 				if (*endptr == '.') {
 					int offset = 0;
 					tmp->type = INT_VERSION;
+					// could both be stored inside void * since it is 8 bytes, but this is clearer
 					Theme *theme = malloc(sizeof(Theme));
 					theme->big = (int)res;
-					theme->small = readInt(str + i, &offset);
+					theme->small = readInt(endptr + 1, &offset);
 					tmp->info = theme;
-					i += offset;
+					i += offset + 2; // ??????? idk
 				} else {
 					tmp->type = INT;
 					tmp->info = (void *) res;
@@ -169,6 +157,7 @@ DataObjArray *parseLine(FILE *fp) {
 // returns NULL on EOF
 Data *parseMainTable(FILE *fp) {
 	Data *data = malloc(sizeof(Data));
+
 	// key destroy func is NULL since they will be freed when the remaining data is freed (they are shared)
 	GHashTable * table = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, freeTableStruct);
 	DataObjArray *lineData = parseLine(fp);
@@ -186,11 +175,15 @@ Data *parseMainTable(FILE *fp) {
 	}
 
 	if (max_len == 0) { // EOF
+
 		free(data);
 		g_hash_table_destroy(table);
 		return NULL;
 	}
 	data->main_table = table;
+	// whis is probably bad for sub-tables but idc
+	data->dependency_array = NULL;
+	
 	// data->n_of_themes = max_len-2;
 	return data;
 }
@@ -210,22 +203,26 @@ char *getDependencyString(char *str, FILE *fp) {
 	return str;
 }
 
-void parseDependecyTables(const Data *data, FILE *fp) {
+void parseDependecyTables(Data *data, FILE *fp) {
 	char *str = alloca(sizeof(char) * BUFFER_SIZE); // compiler didnt like the fact that it was array and not pointer
 	DataObjArray * lookup_res;
-
+	// this is done here so that subtables dont make one
+	// 10 was pulled out of my ass
+	data->dependency_array = g_ptr_array_new_full(10, NULL);
 	while ((str = getDependencyString(str, fp)) != NULL) {
-		lookup_res = g_hash_table_lookup(data->main_table, str);
+		lookup_res = g_hash_table_lookup(((const Data *) data)->main_table, str);
 		if (lookup_res == NULL) {
 			fprintf(stderr, "Sub-table found but no entry in main table corresponds to it. Found:'%s'\n", str);
 			exit(1);
 		} else {
 			lookup_res->dependency_table = parseMainTable(fp);
+			// add to the array that lists all the dependencies
+			g_ptr_array_add(((const Data *) data)->dependency_array, (char *)(lookup_res->arr[0].info));
 			// printf("dependency table for %s:\n", str);
 			// dumpTable(lookup_res->dependency_table);
 			// printf("%s dependency table ended\n", str);
 		}
-	}	
+	}
 }
 
 void freeNULL (void *data) {
@@ -250,8 +247,11 @@ void freeTableStruct(void *data) {
 
 //frees Data *
 void freeTableData(Data *data) {
-	if (data != NULL) g_hash_table_destroy(data->main_table);
-	free(data);
+	if (data != NULL) {
+		g_hash_table_destroy(data->main_table);
+		if (data->dependency_array != NULL) g_ptr_array_free(data->dependency_array, TRUE);
+		free(data);
+	}
 }
 
 void printSpace(int depth) {
@@ -364,16 +364,53 @@ GHashTable *getTable(Data *data) {
 
 // checks if there needs to be a change
 // if so, applies it immediately (for simplicity)
+// from here needs to go to a function that queries for filename!!!!!!!
 void executeChange(Data *data, char * input) {
+
+	// printf("size: %d\n", (data->dependency_array)->len);
+	// printf("'%s'\n", (char *)g_ptr_array_index(data->dependency_array, 0));
+	// printf("'%s'\n", (char *)g_ptr_array_index(data->dependency_array, 1));
+
 	DataObjArray *dataobjarray = tableLookup(data, input);
 	DataObj *themeobj = &(dataobjarray->arr)[1];
+
+	char *endptr;
+	long int res = strtol(getenv("ROFI_INFO"), &endptr, 10);
+	Theme new_theme = {(int)res, 0};
+	if (*endptr == '.') {
+		new_theme.small = atoi(endptr + 1);
+	}
+
+	Theme original_theme;
+	
 	if (themeobj->type == INT) {
-		long int original_theme = (long int)themeobj->info;
-		printf("Executing change for %s, from theme %d to theme %s", input, (int)original_theme, getenv("ROFI_INFO"));
+		original_theme.big = (int)((long int)themeobj->info);
+		original_theme.small = 0;
 	} else if (themeobj->type == INT_VERSION) {
-		Theme * original_theme = (Theme *)themeobj->info;
-		printf("Executing change for %s, from theme %d.%d to theme %s", input, original_theme->big, original_theme->small, getenv("ROFI_INFO"));
+		original_theme = *((Theme *)themeobj->info);
 	} else {
 		printf("Error in '%s' (%s)\n", __func__, input);
 	}
+	executeOnclick(data, dataobjarray, &new_theme, &original_theme);
 }
+
+void executeOnclick(Data * data, DataObjArray *dataobjarray, Theme *new_theme, Theme *original_theme) {
+	// needs to perform action depending on what on_click section says, and if there are things to be changed then output entire table
+	char * command = (char *)dataobjarray->arr[2].info;
+	printf("command %s\n", command);
+	// 3 possibilities: show_var, show_sub, apply
+	// this is slightly faster than strcmp
+	char cmd = command[5];
+	if (cmd == '\0') {
+		printf("apply\n");
+	} else if (cmd == 'v') {
+		printf("show var\n");
+	} else {
+		printf("show sub\n");
+	}
+}
+
+// void saveTableToFile(Data *data) {
+// 	FILE *fp = fopen("data/table_save.tb", "w");
+// 	int res = fputs("This table was autogenerated as output\n", fp);
+// }

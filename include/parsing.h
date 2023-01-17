@@ -34,7 +34,7 @@ Data *parseMainTable(FILE *);
 DataObjArray *parseLine(FILE *fp);
 void freeTableData(Data *data);
 void dumpTable(Data *data, long int depth);
-void parseDependecyTables(const Data *, FILE *);
+void parseDependecyTables(Data *, FILE *);
 DataObjArray *tableLookup(Data *data, char *str);
 int getLen(DataObjArray *data);
 void printValue(DataObj *data);

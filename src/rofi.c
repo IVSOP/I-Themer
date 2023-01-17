@@ -7,11 +7,6 @@
 
 // SEE HOW POWERMENU SCRIPT HANDLES ICONS
 
-//		inputs and info:
-// input = NULL: goes to main menu
-// input = Theme X: goes to menu of theme X
-// when clicked, the next input will just be its text so it cab be looked up
-
 void printMainOptions(Data *data) {
 	DataObjArray * arr = tableLookup(data, "color-icons");
 	int i;
@@ -54,7 +49,6 @@ void printThemeOptions(Data *data, char *theme) {
 	// each iteration gets a struct with the theme currently displayed, and the original data
 	LoopInfo info = {themeInt, data};
 	g_hash_table_foreach(getTable(data), generateThemeOptions, (void *)&info);
-	exit(5);
 	printf("Back");
 	SEP1;
 	printf("info");
@@ -62,17 +56,6 @@ void printThemeOptions(Data *data, char *theme) {
 	printf("main menu\n");
 	// printf("Done\n");
 }
-
-// next thing to do: make each click do what the on_click section says
-// then, clean up table.tb
-// the end result should be a directory with files that the scripts will use
-// those files should be soft links to other fiels
-// those other files are the ones in the table
-// this way few data gets copied
-
-// 2: make individual buttons work
-// 3: make 'All' button work
-// 4: make 3 look pretty, make the line to be changed have underline, icon changes etc
 
 // this should be changed to something faster
 void inputHandler(Data *data, char *input) {
