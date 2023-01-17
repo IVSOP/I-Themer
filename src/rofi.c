@@ -5,6 +5,8 @@
 #define SEP1 putchar('\0')
 #define SEP2 putchar('\x1f')
 
+// SEE HOW POWERMENU SCRIPT HANDLES ICONS
+
 //		inputs and info:
 // input = NULL: goes to main menu
 // input = Theme X: goes to menu of theme X
@@ -28,27 +30,58 @@ void printMainOptions(Data *data) {
 	}
 }
 
-void printThemeOptions(Data *data, int theme) {
+void printThemeOptions(Data *data, char *theme) {
+	char *endptr;
+	long int res = strtol(theme, &endptr, 10);
+	if (*endptr == '.') {
+		printf("Theme not an int??\n");
+		exit(5);
+		res = res; // compiler warn (???)
+	}
+	int themeInt = atoi(theme);
+
 	DataObjArray * arr = tableLookup(data, "color-icons");
-	DataObj *dataobj = getDataObj(arr, theme + 1);
+	DataObj *dataobj = getDataObj(arr, themeInt + 1);
 	SEP1;
 	printf("prompt");
 	SEP2;
-	printf("Theme %d\nAll", theme);
+	printf("Theme %d\nAll", themeInt);
 	SEP1;
 	printf("icon");
 	SEP2;
 	printf("%s/%s\n", getenv("HOME"), (char *)getValue(dataobj));
-	// need loop to print the [0] of each array, and display its color acording to first part of [1]
 
 	// each iteration gets a struct with the theme currently displayed, and the original data
-	LoopInfo info = {theme, data};
+	LoopInfo info = {themeInt, data};
 	g_hash_table_foreach(getTable(data), generateThemeOptions, (void *)&info);
+	exit(5);
+	printf("Back");
+	SEP1;
+	printf("info");
+	SEP2;
+	printf("main menu\n");
+	// printf("Done\n");
 }
 
+// next thing to do: make each click do what the on_click section says
+// then, clean up table.tb
+// the end result should be a directory with files that the scripts will use
+// those files should be soft links to other fiels
+// those other files are the ones in the table
+// this way few data gets copied
+
+// 2: make individual buttons work
+// 3: make 'All' button work
+// 4: make 3 look pretty, make the line to be changed have underline, icon changes etc
+
+// this should be changed to something faster
 void inputHandler(Data *data, char *input) {
 	if (strncmp("Theme", input, 5) == 0) { // selected theme from main menu
-		printThemeOptions(data, atoi(input + 6));
+		printThemeOptions(data, input + 6);
+	} else if (strncmp("Done", input, 4) == 0) {
+		return;
+	} else { // clicked an option like "background", info contains theme it was picked in
+		executeChange(data, input);
 	}
 }
 
@@ -65,7 +98,6 @@ int mainRofiLoop(char *input) {
 	} else {
 		inputHandler(data, input);
 	}
-
 
 	// dumpTable(data, 0);
 	freeTableData(data);

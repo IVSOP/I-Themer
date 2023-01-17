@@ -19,6 +19,10 @@ struct DataObjArray {
 	Data * dependency_table;
 };
 
+struct Theme {
+	int big, small;
+};
+
 char *custom_strdup(char *src, int len);
 void freeTableStruct(void *data);
 void dumpDataObjArray(DataObjArray *, long int depth);
@@ -26,13 +30,20 @@ void dumpTableEntry(gpointer key, gpointer value, gpointer user_data);
 
 
 char *readString(char *str, int *len) {
-	int i = *len;
+	int i;
 	for (i = 0; str[i] != ';'; i++);
 	str[i] = '\0';
 	i++;
 	(*len) += i;
 	char * res = malloc(sizeof(char) * i);
 	return memcpy(res, str, i);
+}
+
+int readInt(char *str, int *len) {
+	char *endptr;
+	long int res = strtol(str, &endptr, 10);
+	(*len) += (int)(endptr - str);
+	return (int)res;
 }
 
 // int readStringDelim(FILE *fp, char delim, char *buffer) {
@@ -105,7 +116,10 @@ DataObjArray *parseLineString(char *str, ssize_t strlen) {
 				if (*endptr == '.') {
 					int offset = 0;
 					tmp->type = INT_VERSION;
-					tmp->info = readString(str + i, &offset);
+					Theme *theme = malloc(sizeof(Theme));
+					theme->big = (int)res;
+					theme->small = readInt(str + i, &offset);
+					tmp->info = theme;
 					i += offset;
 				} else {
 					tmp->type = INT;
@@ -264,6 +278,8 @@ void dumpDataObjArray(DataObjArray * data, long int depth) {
 			dumpDataObjArray((DataObjArray *)tmp->info, depth + 4);
 		} else if (type == EMPTY) {
 			printf("empty\n");
+		} else if (type == INT_VERSION) {
+			printf("version: %d.%d\n", ((Theme *)tmp->info)->big, ((Theme *)tmp->info)->small);
 		}
 	}
 	if (data->dependency_table != NULL) {
@@ -323,21 +339,41 @@ void generateThemeOptions(gpointer key, gpointer value, gpointer user_data) {
 	LoopInfo *info = (LoopInfo *)user_data;
 	DataObj *obj = ((DataObjArray *)value)->arr;
 	DataObj *colorArr = (tableLookup(info->data, "color-icons"))->arr;
-	char home[BUFFER_SIZE];
-	snprintf(home, BUFFER_SIZE, "%s", getenv("HOME"));
 
 	printf("%s", (char *)(obj[0].info));
 	SEP1;
-	long int theme = (long int)(obj[1].info);
 	printf("info");
 	SEP2;
 	printf("%d", info->selected_theme);
 	SEP2;
 	printf("icon");
 	SEP2;
-	printf("%s/%s\n", home, (char *)(colorArr[theme + 1].info));
+	// no matter subtheme, colors is of the main theme
+	long int theme;
+	if (obj[1].type == INT) {	
+		theme = (long int)(obj[1].info);
+	} else { // INT_VERSION
+		theme = ((Theme *)obj[1].info)->big;
+	}
+	printf("%s/%s\n", getenv("HOME"), (char *)(colorArr[theme + 1].info));
 }
 
 GHashTable *getTable(Data *data) {
 	return data->main_table;
+}
+
+// checks if there needs to be a change
+// if so, applies it immediately (for simplicity)
+void executeChange(Data *data, char * input) {
+	DataObjArray *dataobjarray = tableLookup(data, input);
+	DataObj *themeobj = &(dataobjarray->arr)[1];
+	if (themeobj->type == INT) {
+		long int original_theme = (long int)themeobj->info;
+		printf("Executing change for %s, from theme %d to theme %s", input, (int)original_theme, getenv("ROFI_INFO"));
+	} else if (themeobj->type == INT_VERSION) {
+		Theme * original_theme = (Theme *)themeobj->info;
+		printf("Executing change for %s, from theme %d.%d to theme %s", input, original_theme->big, original_theme->small, getenv("ROFI_INFO"));
+	} else {
+		printf("Error in '%s' (%s)\n", __func__, input);
+	}
 }

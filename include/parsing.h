@@ -24,6 +24,7 @@ typedef struct {
 	int selected_theme;
 	Data *data;
 } LoopInfo;
+typedef struct Theme Theme;
 
 typedef void freeFunc(void *);
 
@@ -42,5 +43,6 @@ int getActivePerTheme(int theme);
 void *getValue(DataObj *data);
 GHashTable *getTable(Data *data);
 void generateThemeOptions(gpointer key, gpointer value, gpointer user_data);
+void executeChange(Data *data, char * input);
 
 #endif
