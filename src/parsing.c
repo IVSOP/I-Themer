@@ -464,91 +464,6 @@ void executeOnclick(Data * data, DataObjArray *dataobjarray) {
 		printf("Error, invalid on_click\n");
 		exit(1);
 	}
-
-	// DataObj *themeObj = &dataobjarray->arr[1];
-	// DataObj *current;
-	// char cmd = command[5];
-	// char *home = getenv("HOME");
-	// if (cmd == '\0') {
-	// 	// even if themes are the same you can just apply them
-	// 	freeDataObj(themeObj);
-	// 	if (new_theme->small == 0) {
-	// 		themeObj->type = INT;
-	// 		themeObj->info = (void *)((long int)new_theme->big);
-	// 	} else {
-	// 		themeObj->type = INT_VERSION;
-	// 		Theme *new = malloc(sizeof(Theme));
-	// 		themeObj->info = memcpy(new, new_theme, sizeof(Theme));
-	// 	}
-	// 	saveTableToFile(data);
-	// } else if (cmd == 'v') {
-	// 	DataObjArray *list = (DataObjArray *)dataobjarray->arr[new_theme->big + 3].info;
-	// 	DataObj *arr = list->arr;
-	// 	int i, len = list->len;
-		
-	// // 	// i dont like this being hardcoded, but it was the simplest way
-	// // 	// background icons are not the color theme but the picture itself
-	// 	if (strncmp("background", (char *)(dataobjarray->arr[0].info), 10) == 0) {
-	// 		// 1 if true, 0 if false
-	// 		for (i = 0; i < len; i++) {
-	// 			current = &arr[i];
-	// 			printDataObj(current);
-	// 			SEP1;
-	// 			printf("icon");
-	// 			SEP2;
-	// 			printf("%s/%s", home, (char *)current->info);
-	// 			SEP2;
-	// 			printf("info"); // format: x.y-background
-	// 			SEP2;
-	// 			printf("%d.%d-%s\n", new_theme->big, i + 1, "background"); // background hardcoded idc
-	// 		}
-	// 		// I tried using nonselectable, but didnt understand how it worked
-	// 		// will leave it to the user to not repeat selections, but program will do them anyway probably
-	// 		if (original_theme->big == new_theme->big) {
-	// 			SEP1;
-	// 			printf("active");
-	// 			SEP2;
-	// 			printf("%d\n", original_theme->small - 1);
-	// 		}
-	// 	} else {
-	// 		printf("show_var for things other that background not complete\n"); exit(5);
-	// 	}
-	// } else {
-	// 	DataObj *colorArr = ((DataObjArray *)g_hash_table_lookup(data->main_table, "color-icons"))->arr;
-	// 	Data *dep = dataobjarray->dependency_table;
-	// 	GHashTableIter iter;
-	// 	char *key = NULL;
-	// 	DataObjArray *current = NULL;
-	// 	DataObj *arr;
-	// 	Theme theme;
-
-	// 	g_hash_table_iter_init (&iter, dep->main_table);
-	// 	while (g_hash_table_iter_next (&iter, (void **)&key, (void **)&current))
-	// 	{
-	// 		arr = current->arr;
-	// 		if ((&arr[1])->type == INT) {
-	// 			theme.big = (int)((long int)((&arr[1])->info));
-	// 			theme.small = 0;
-	// 		} else {
-	// 			theme = *((Theme *)(&arr[1])->info);
-	// 		}
-	// 		printf("%s", key);
-	// 		SEP1;
-	// 		printf("info"); //format: x.y-command, just like in background
-	// 		SEP2;
-	// 		printf("%d.%d-%s", theme.big, theme.small, command);
-	// 		SEP2;
-	// 		printf("icon");
-	// 		SEP2;
-	// 		printf("%s/%s\n", home, (char *)(&colorArr[theme.big + 1])->info);
-	// 	}
-	// 	// missing showing active lines
-	// }
-	// printf("Back");
-	// SEP1;
-	// printf("info");
-	// SEP2;
-	// printf("Theme %d\n", original_theme->big);
 }
 
 void parseThemes(DataObjArray *dataobjarray, Theme *new_theme, Theme *original_theme) {
@@ -603,17 +518,92 @@ void executeApply(Data *data, DataObjArray *dataobjarray) {
 	printf("%s/%s\n", getenv("HOME"), (char *)(&colorArr[new_theme.big + 1])->info);
 	generateThemeOptions(data, new_theme.big);
 	printf("Back\n");
-	dumpTable(data, 0);
 
 	saveTableToFile(data);
 }
 
+// this is an incomplete mess
 void displaySub(Data *data, DataObjArray *dataobjarray) {
-	printf("sub\n");
+	Theme original_theme, new_theme;
+	parseThemes(dataobjarray, &new_theme, &original_theme);
+	DataObj *colorArr = ((DataObjArray *)g_hash_table_lookup(data->main_table, "color-icons"))->arr;
+	Data *dep = dataobjarray->dependency_table;
+	GHashTableIter iter;
+	char *key = NULL;
+	DataObjArray *current = NULL;
+	DataObj *arr;
+	Theme theme;
+
+	char *home = getenv("HOME");
+	g_hash_table_iter_init (&iter, dep->main_table);
+	while (g_hash_table_iter_next (&iter, (void **)&key, (void **)&current))
+	{
+		arr = current->arr;
+		if ((&arr[1])->type == INT) {
+			theme.big = (int)((long int)((&arr[1])->info));
+			theme.small = 0;
+		} else {
+			theme = *((Theme *)(&arr[1])->info);
+		}
+		printf("%s", key);
+		SEP1;
+		printf("info"); //format: x.y-command, just like in background
+		SEP2;
+		printf("%d.%d-%s", theme.big, theme.small, key);
+		SEP2;
+		printf("icon");
+		SEP2;
+		printf("%s/%s\n", home, (char *)(&colorArr[theme.big + 1])->info);
+	}
+
+	// missing showing active lines
+	printf("Back");
+	SEP1;
+	printf("info");
+	SEP2;
+	printf("Theme %d\n", new_theme.big);
 }
 
 void displayVar(Data *data, DataObjArray *dataobjarray) {
-	printf("var\n");
+	Theme original_theme, new_theme;
+	parseThemes(dataobjarray, &new_theme, &original_theme);
+	char *home = getenv("HOME");
+	DataObjArray *list = (DataObjArray *)dataobjarray->arr[new_theme.big + 3].info;
+	DataObj *arr = list->arr, *current;
+	int i, len = list->len;
+	
+	// i dont like this being hardcoded, but it was the simplest way
+	// background icons are not the color theme but the picture itself
+	if (strncmp("background", (char *)(dataobjarray->arr[0].info), 10) == 0) {
+		// 1 if true, 0 if false
+		for (i = 0; i < len; i++) {
+			current = &arr[i];
+			printDataObj(current);
+			SEP1;
+			printf("icon");
+			SEP2;
+			printf("%s/%s", home, (char *)current->info);
+			SEP2;
+			printf("info"); // format: x.y-background
+			SEP2;
+			printf("%d.%d-%s\n", new_theme.big, i + 1, "background"); // background hardcoded idc
+		}
+		// I tried using nonselectable, but didnt understand how it worked
+		// will leave it to the user to not repeat selections, but program will do them anyway (probably)
+		if (original_theme.big == new_theme.big) {
+			SEP1;
+			printf("active");
+			SEP2;
+			printf("%d\n", original_theme.small - 1);
+		}
+	} else {
+		printf("show_var for things other that background not complete\n"); exit(5);
+	}
+	printf("Back");
+	SEP1;
+	printf("info");
+	SEP2;
+	printf("Theme %d\n", new_theme.big);
 }
 
 void saveTableToFile(Data *data) {
