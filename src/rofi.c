@@ -49,11 +49,11 @@ void printThemeOptions(Data *data, char *theme) {
 	// each iteration gets a struct with the theme currently displayed, and the original data
 	LoopInfo info = {themeInt, data};
 	g_hash_table_foreach(getTable(data), generateThemeOptions, (void *)&info);
-	printf("Back");
-	SEP1;
-	printf("info");
-	SEP2;
-	printf("main menu\n");
+	printf("Back\n");
+	// SEP1;
+	// printf("info");
+	// SEP2;
+	// printf("main menu\n");
 	// printf("Done\n");
 }
 
@@ -63,6 +63,12 @@ void inputHandler(Data *data, char *input) {
 		printThemeOptions(data, input + 6);
 	} else if (strncmp("Done", input, 4) == 0) {
 		return;
+	} else if (strncmp("Back", input, 4) == 0) {
+		char *info = getenv("ROFI_INFO");
+		if (info == NULL) printMainOptions(data); // back to main menu
+		else { // back to previous option (for now, goes back to theme selection)
+			printThemeOptions(data, info + 6); // Theme x
+		}
 	} else { // clicked an option like "background", info contains theme it was picked in
 		executeChange(data, input);
 	}

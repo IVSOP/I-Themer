@@ -424,7 +424,8 @@ void printDataObj(DataObj *data) {
 	}
 }
 
-// falta mostrar as coisas que estao ativas nesta funçao
+// input to get here:
+// <commmand> (theme is passed through info parsed in other function)
 void executeOnclick(Data * data, DataObjArray *dataobjarray, Theme *new_theme, Theme *original_theme) {
 	// needs to perform action depending on what on_click section says, and if there are things to be changed then output entire table
 	char * command = (char *)dataobjarray->arr[2].info;
@@ -469,14 +470,15 @@ void executeOnclick(Data * data, DataObjArray *dataobjarray, Theme *new_theme, T
 			}
 			// I tried using nonselectable, but didnt understand how it worked
 			// will leave it to the user to not repeat selections, but program will do them anyway probably
-			SEP1;
-			printf("active");
-			SEP2;
-			printf("%d", original_theme->small - 1);
+			if (original_theme->big == new_theme->big) {
+				SEP1;
+				printf("active");
+				SEP2;
+				printf("%d\n", original_theme->small - 1);
+			}
 		} else {
 			printf("show_var for things other that background not complete\n"); exit(5);
 		}
-
 	} else {
 		DataObj *colorArr = ((DataObjArray *)g_hash_table_lookup(data->main_table, "color-icons"))->arr;
 		Data *dep = dataobjarray->dependency_table;
@@ -508,6 +510,11 @@ void executeOnclick(Data * data, DataObjArray *dataobjarray, Theme *new_theme, T
 		}
 		// missing showing active lines
 	}
+	printf("Back");
+	SEP1;
+	printf("info");
+	SEP2;
+	printf("Theme %d\n", original_theme->big);
 }
 
 void saveTableToFile(Data *data) {
