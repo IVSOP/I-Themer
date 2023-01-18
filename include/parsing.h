@@ -40,5 +40,6 @@ void *getValue(DataObj *data);
 GHashTable *getTable(Data *data);
 void generateThemeOptions(Data *data, int theme);
 void executeChange(Data *data, char * input);
+void queryHandler(Data *data, char *query);
 
 #endif

@@ -64,6 +64,9 @@ void inputHandler(Data *data, char *input) {
 		else { // back to previous option (for now, goes back to theme selection)
 			printThemeOptions(data, info + 6); // Theme x
 		}
+	} else if (strncmp("query", input, 5) == 0) { //format: query-number-arg1-arg2;...
+		queryHandler(data, input + 6);
+	// WILL CRASH IF INFO IS NULL
 	} else if (strncmp("Theme", (info = getenv("ROFI_INFO")), 5) == 0) { // applied an option, going back to theme selection
 		printThemeOptions(data, info + 6);
 	} else { // clicked an option like "background", info contains theme it was picked in

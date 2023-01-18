@@ -8,8 +8,8 @@ color-icons;.config/i3/lock/red1.png;.config/i3/lock/blue1.png;.config/i3/lock/w
 polybar;1;show_sub
 
 polybar:
-bar;1;apply
-theme;1;apply
+bar;1;apply;one;two
+theme;1;apply;one;two
 
 rofi:
 network-manager;1;apply;[.config/i3/themes/rofi/0/rofi-network-manager-0.conf;.config/i3/themes/rofi/0/rofi-network-manager-0.rasi];[.config/i3/themes/rofi/1/rofi-network-manager-1.conf;.config/i3/themes/rofi/1/rofi-network-manager-1.rasi]

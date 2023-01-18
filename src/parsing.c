@@ -34,7 +34,7 @@ void executeOnclick(Data * data, DataObjArray *dataobjarray);
 void saveTableToFile(Data *data);
 void displaySub(Data *data, DataObjArray *dataobjarray, char * command);
 void displayVar(Data *data, DataObjArray *dataobjarray);
-void executeVar(Data *data, char *input);
+void executeVar(Data *data, Theme *new_theme, DataObj *themeobj);
 void executeSub(Data *data, char *input);
 void executeApply(Data *data, DataObjArray *dataobjarray);
 void parseThemes(DataObjArray *dataobjarray, Theme *new_theme, Theme *original_theme);
@@ -401,7 +401,6 @@ void executeChange(Data *data, char * input) {
 		executeOnclick(data, dataobjarray);
 	} else { // option got clicked inside of a display_var or display_sub
 		char *endptr, *info = getenv("ROFI_INFO");
-		printf("got %s %s\n", input, info);
 		Theme theme;
 		theme.big = (int)strtol(info, &endptr, 10);
 		if (*endptr != '.') {
@@ -429,7 +428,8 @@ void executeChange(Data *data, char * input) {
 			// can either be show_sub or show_var
 			char mode = ((char *)(obj->info))[5]; // no error checking
 			if (mode == 'v') {
-				printf("show var\n");
+				executeVar(data, &theme, objtheme);
+				displayVar(data, dataobjarray);
 			} else { // no error checking
 				printf("show sub\n");
 			}
@@ -588,7 +588,7 @@ void displayVar(Data *data, DataObjArray *dataobjarray) {
 	DataObjArray *list = (DataObjArray *)dataobjarray->arr[new_theme.big + 3].info;
 	DataObj *arr = list->arr, *current;
 	int i, len = list->len;
-	
+
 	// i dont like this being hardcoded, but it was the simplest way
 	// background icons are not the color theme but the picture itself
 	if (strncmp("background", (char *)(dataobjarray->arr[0].info), 10) == 0) {
@@ -623,9 +623,13 @@ void displayVar(Data *data, DataObjArray *dataobjarray) {
 	printf("Theme %d\n", new_theme.big);
 }
 
-void executeVar(Data *data, char *input) {
-	printf("ehehehe\n"); exit(1);
-	// printf("executing change var from %d.%d to %d.%d");
+void executeVar(Data *data, Theme *new_theme, DataObj *themeobj) {
+	if (themeobj->type == INT) {
+		Theme *new = malloc(sizeof(Theme));
+		themeobj->info = memcpy(new, new_theme, sizeof(Theme));
+	} else {
+		themeobj->info = memcpy(themeobj->info, new_theme, sizeof(Theme));
+	}
 	saveTableToFile(data);
 }
 
@@ -718,4 +722,98 @@ void outVersion(void *data, FILE *fp) {
 
 void outEmpty(void *data, FILE *fp) {
 	return;
+}
+
+// format received: number-arg1-arg2-...
+// 0: lookup <name>-<subname> (subname only if it has sub tables)
+// 1: change to (not implemented) <theme>-<name>-<subname>
+void queryHandler(Data *data, char *query) {
+	char *endptr;
+	long int command = strtol(query, &endptr, 10);
+	endptr++;
+	if (command == 0) {
+		char *arg1 = endptr, *arg2;
+		for (arg2 = arg1; *arg2 != '\0' && *arg2 != '-'; arg2++);
+		if (*arg2 == '\0') { // subname not provided
+			arg2 = NULL;
+		} else {
+			arg2[0] = '\0';
+			arg2++;
+		}
+		DataObjArray *dataobjarray = (DataObjArray *)g_hash_table_lookup(data->main_table, arg1);
+		if (dataobjarray == NULL) {
+			printf("Name not found (arg1)\n");
+			exit(1);
+		}
+		DataObj *arr = dataobjarray->arr, *themeobj = &arr[1];
+		Theme theme;
+		if (themeobj->type == INT) {
+			theme.big = (int)((long int)themeobj->info);
+			theme.small = 0;
+		} else { // no error checking
+			theme = *(Theme *)themeobj->info;
+		}
+		char mode = ((char *)(&arr[2])->info)[5]; // will be apply(\0), show_var(v) or show_sub(s)
+		// switch???
+		if (mode == '\0') {	
+			if (theme.small != 0) {
+				printf("Internal error, theme is x.y but mode is apply (theme should be x.0)\n");
+				exit(1);
+			}
+			printf("%s\n", (char *)(&arr[theme.big + 3])->info);
+		} else if (mode == 'v') {
+			DataObj *listobj = &arr[theme.big + 3];
+			if (listobj->type != LIST) {
+				printf("Internal error, theme is x.y but there is no list on [x]\n");
+				exit(1);
+			}
+			if (theme.small == 0) {
+				printf("Internal error, theme not in the form x.y\n");
+				exit(1);
+			}
+			DataObj *list = &(((DataObjArray *)listobj->info)->arr)[theme.small - 1];
+			printf("%s\n", (char *)(list->info));
+		} else if (mode == 's') {
+			DataObjArray *target_dep = (DataObjArray *)g_hash_table_lookup(dataobjarray->dependency_table->main_table, arg2);
+			if (target_dep == NULL) {
+				printf("Name not found (arg2)\n");
+				exit(1);
+			}
+			// for now it is assumed that it is an "apply" thing,
+			// in the future change this funtion into several other functions
+			// so that you just have to call it for this particular DataObjArray
+			// this is really very bad please change
+			
+			// theme , themeobj and arr are reused
+			arr = target_dep->arr;
+			themeobj = &arr[1];
+			if (themeobj->type == INT) {
+				theme.big = (int)((long int)themeobj->info);
+				theme.small = 0;
+			} else { // no error checking
+				theme = *(Theme *)themeobj->info;
+			}
+			DataObj *current = &arr[theme.big + 3];
+			printf("%s\n", (char *)(current->info));
+			
+		}
+
+	//} else { if (command == 1) {
+	// 	char *arg1 = endptr, *arg2, *arg3;
+	// 	for (arg2 = endptr; *arg2 != '-'; arg2++);
+	// 	arg2[0] = '\0';
+	// 	arg2++;
+	// 	for (arg3 = arg2; *arg3 != '\0' && *arg3 != '-'; arg3++);
+	// 	if (*arg3 == '\0') { // subname not provided
+	// 		arg3 = NULL;
+	// 	} else {
+	// 		arg3[0] = '\0';
+	// 		arg3++;
+	// 	}
+	// 	printf("'%s' '%s' '%s'\n", arg1, arg2, arg3);
+	// 	// no error checking for further arguments!!!
+	} else {
+		printf("Query not implemented\n");
+		exit(1);
+	}
 }
