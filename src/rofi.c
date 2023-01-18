@@ -47,16 +47,8 @@ void printThemeOptions(Data *data, char *theme) {
 	SEP2;
 	printf("%s/%s\n", getenv("HOME"), (char *)getValue(dataobj));
 
-	// each iteration gets a struct with the theme currently displayed, and the original data
-	// LoopInfo info = {themeInt, data};
-	// g_hash_table_foreach(getTable(data), generateThemeOptions, (void *)&info);
 	generateThemeOptions(data, themeInt);
 	printf("Back\n");
-	// SEP1;
-	// printf("info");
-	// SEP2;
-	// printf("main menu\n");
-	// printf("Done\n");
 }
 
 // this should be changed to something faster

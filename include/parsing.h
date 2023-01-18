@@ -20,10 +20,6 @@ typedef enum {
 typedef struct DataObj DataObj;
 typedef struct Data Data;
 typedef struct DataObjArray DataObjArray;
-// typedef struct {
-// 	int selected_theme;
-// 	Data *data;
-// } LoopInfo;
 typedef struct Theme Theme;
 
 typedef void freeFunc(void *);
