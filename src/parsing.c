@@ -32,7 +32,7 @@ void dumpDataObjArray(DataObjArray *, long int depth);
 void dumpTableEntry(gpointer key, gpointer value, gpointer user_data);
 void executeOnclick(Data * data, DataObjArray *dataobjarray);
 void saveTableToFile(Data *data);
-void displaySub(Data *data, DataObjArray *dataobjarray);
+void displaySub(Data *data, DataObjArray *dataobjarray, char * command);
 void displayVar(Data *data, DataObjArray *dataobjarray);
 void executeVar(Data *data, char *input);
 void executeSub(Data *data, char *input);
@@ -360,11 +360,11 @@ void generateThemeOptions(Data *data, int selected_theme) {
 	for (i = 0; g_hash_table_iter_next (&iter, (void **)&key, (void **)&current); i++) {
 		if (strcmp("color-icons", (char *)key) != 0) {
 			arr = current->arr;
-			printf("%s", (char *)(arr[0].info));
+			printf("%s", key);
 			SEP1;
 			printf("info");
 			SEP2;
-			printf("%d", selected_theme);
+			printf("%d.%d-%s", selected_theme, 0, key);
 			SEP2;
 			printf("icon");
 			SEP2;
@@ -400,25 +400,39 @@ void executeChange(Data *data, char * input) {
 	if (dataobjarray != NULL) { // option got clicked (for first time)
 		executeOnclick(data, dataobjarray);
 	} else { // option got clicked inside of a display_var or display_sub
-		// 2 possibilities: show_var(v), show_sub(s)
-		// this is slightly faster than strcmp
-		char cmd = input[5];
-		if (cmd == 'v') {
-			executeVar(data, input);
-		} else if (cmd == 's') {
-			executeSub(data, input);
+		char *endptr, *info = getenv("ROFI_INFO");
+		printf("got %s %s\n", input, info);
+		Theme theme;
+		theme.big = (int)strtol(info, &endptr, 10);
+		if (*endptr != '.') {
+			printf("Error in %s, expected x.y-option\n", __func__);
+			exit(1);
+		}
+		theme.small = (int)strtol(endptr + 1, &info, 10);
+		if (*info != '-') {
+			printf("Error in %s, expected x.y-option\n", __func__);
+			exit(1);
+		}
+		DataObjArray *dataobjarray = (DataObjArray *)g_hash_table_lookup(data->main_table, info + 1);
+		DataObj *arr = dataobjarray->arr, *obj = &arr[2], *objtheme = &arr[1];
+		Theme original_theme;
+		if (objtheme->type == INT) {
+			original_theme.big = (int)((long int) objtheme->info);
+			original_theme.small = 0;
+		} else { // no error checking
+			original_theme = *(Theme *)objtheme->info;
+		}
+		if (original_theme.big == theme.big && original_theme.small == theme.small) {
+			printf("Themes are the same\n");
+			return;
 		} else {
-			char *endptr;
-			// here I am SURE it will be of a format (x.t-command)
-			Theme new_theme;
-			new_theme.big = (int)strtol(input, &endptr, 10);
-			if (*endptr != '.') {
-				printf("Received %s, error ocurred on lookup\nInfo is %s\n", input, getenv("ROFI_INFO"));
-				exit(1);
+			// can either be show_sub or show_var
+			char mode = ((char *)(obj->info))[5]; // no error checking
+			if (mode == 'v') {
+				printf("show var\n");
+			} else { // no error checking
+				printf("show sub\n");
 			}
-			new_theme.small = (int)strtol(endptr + 1, &input, 10);
-			printf("Changing %s to %d.%d\n", input, new_theme.big, new_theme.small); exit(1);
-
 		}
 	}
 }
@@ -457,7 +471,8 @@ void executeOnclick(Data * data, DataObjArray *dataobjarray) {
 		executeApply(data, dataobjarray);
 		break;
 	case 's':
-		displaySub(data, dataobjarray);
+		// sub needs to know what original command was
+		displaySub(data, dataobjarray, (char *)dataobjarray->arr[0].info);
 		break;
 	case 'v':
 		displayVar(data, dataobjarray);
@@ -526,37 +541,36 @@ void executeApply(Data *data, DataObjArray *dataobjarray) {
 }
 
 // this is an incomplete mess
-void displaySub(Data *data, DataObjArray *dataobjarray) {
-	Theme original_theme, new_theme;
-	parseThemes(dataobjarray, &new_theme, &original_theme);
+void displaySub(Data *data, DataObjArray *dataobjarray, char *command) {
 	DataObj *colorArr = ((DataObjArray *)g_hash_table_lookup(data->main_table, "color-icons"))->arr;
 	Data *dep = dataobjarray->dependency_table;
 	GHashTableIter iter;
 	char *key = NULL;
 	DataObjArray *current = NULL;
 	DataObj *arr;
-	Theme theme;
+	Theme original_theme; //, new_theme; NOT NEEDED info is already "x.y"
 
-	char *home = getenv("HOME");
+	char *home = getenv("HOME"), *info = getenv("ROFI_INFO");
+	int theme = atoi(info);
 	g_hash_table_iter_init (&iter, dep->main_table);
 	while (g_hash_table_iter_next (&iter, (void **)&key, (void **)&current))
 	{
 		arr = current->arr;
 		if ((&arr[1])->type == INT) {
-			theme.big = (int)((long int)((&arr[1])->info));
-			theme.small = 0;
+			original_theme.big = (int)((long int)((&arr[1])->info));
+			original_theme.small = 0;
 		} else {
-			theme = *((Theme *)(&arr[1])->info);
+			original_theme = *((Theme *)(&arr[1])->info);
 		}
 		printf("%s", key);
 		SEP1;
 		printf("info"); //format: x.y-command, just like in background (change <command> to theme <x.y>)
 		SEP2;
-		printf("%d.%d-%s", theme.big, theme.small, key);
+		printf("%d.0-%s", theme, command);
 		SEP2;
 		printf("icon");
 		SEP2;
-		printf("%s/%s\n", home, (char *)(&colorArr[theme.big + 1])->info);
+		printf("%s/%s\n", home, (char *)(&colorArr[original_theme.big + 1])->info);
 	}
 
 	// missing showing active lines
@@ -564,7 +578,7 @@ void displaySub(Data *data, DataObjArray *dataobjarray) {
 	SEP1;
 	printf("info");
 	SEP2;
-	printf("Theme %d\n", new_theme.big);
+	printf("Theme %d\n", theme);
 }
 
 void displayVar(Data *data, DataObjArray *dataobjarray) {
@@ -659,7 +673,7 @@ void outTable(Data *data, FILE *fp) {
 }
 
 void saveTableToFile(Data *data) {
-	FILE *fp = fopen("data/table_new.tb", "w");
+	FILE *fp = fopen("data/table.tb", "w");
 	int res = fputs("This table was autogenerated as output\n", fp);
 	if (res == EOF) {
 		printf("Output file error in %s\n", __func__);
