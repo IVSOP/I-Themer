@@ -344,8 +344,10 @@ void generateThemeOptions(Data *data, int selected_theme) {
 	DataObj *arr;
 	int theme;
 
+	int active[g_hash_table_size(data->main_table) - 1], i;
+
 	g_hash_table_iter_init (&iter, data->main_table);
-	while (g_hash_table_iter_next (&iter, (void **)&key, (void **)&current)) {
+	for (i = 0; g_hash_table_iter_next (&iter, (void **)&key, (void **)&current); i++) {
 		if (strcmp("color-icons", (char *)key) != 0) {
 			arr = current->arr;
 			printf("%s", (char *)(arr[0].info));
@@ -363,8 +365,20 @@ void generateThemeOptions(Data *data, int selected_theme) {
 				theme = ((Theme *)arr[1].info)->big;
 			}
 			printf("%s/%s\n", getenv("HOME"), (char *)(colorArr[theme + 1].info));
+
+			active[i] = theme == selected_theme ? 1 : 0;
+		} else i--;
+	}
+	SEP1;
+	printf("active");
+	SEP2;
+	int j = i;
+	for (i = 0; i < j; i++) {
+		if (active[i] == 1) {
+			printf("%d,", i + 1);
 		}
 	}
+	putchar('\n');
 }
 
 GHashTable *getTable(Data *data) {
