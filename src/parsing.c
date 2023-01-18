@@ -443,6 +443,7 @@ void executeOnclick(Data * data, DataObjArray *dataobjarray, Theme *new_theme, T
 	// 3 possibilities: show_var, show_sub, apply
 	// this is slightly faster than strcmp
 	DataObj *themeObj = &dataobjarray->arr[1];
+	DataObj *current;
 	char cmd = command[5];
 	if (cmd == '\0') {
 		// even if themes are the same you can just apply them
@@ -460,10 +461,50 @@ void executeOnclick(Data * data, DataObjArray *dataobjarray, Theme *new_theme, T
 		DataObjArray *list = (DataObjArray *)dataobjarray->arr[new_theme->big + 3].info;
 		DataObj *arr = list->arr;
 		int i, len = list->len;
-		for (i = 0; i < len; i++) {
-			printDataObj(&arr[i]);
-			putchar('\n');
+		char *home = getenv("HOME");
+
+		// 3) finish this for loop, somehow I need to pass something as INFO that allows inputHandler to call a function to change themes (should be like "swap background 1.4" to say theme 1 list[4 - 1])
+		// 4) finish else of this function
+		// 5) finish saveTableToFile
+		// 6) upgrade executeOnclick to show themes that are active
+		// 7) why did i make the dependency array????
+		
+		// i dont like this being hardcoded, but it was the simplest way
+		// background icons are not the color theme but the picture itself
+		if (strncmp("background", (char *)(dataobjarray->arr[0].info), 10) == 0) {
+			// 1 if true, 0 if false
+			for (i = 0; i < len; i++) {
+				current = &arr[i];
+				printDataObj(current);
+				SEP1;
+				printf("icon");
+				SEP2;
+				printf("%s/%s", home, (char *)current->info);
+				putchar('\n');
+			}
+			SEP1;
+			printf("active");
+			SEP2;
+			printf("%d\n", original_theme->small - 1);
+		} else {
+			printf("show_var for things other that background not complete\n"); exit(5);
+			// DataObj *colorArr = ((DataObjArray *)g_hash_table_lookup(data->main_table, "color-icons"))->arr;
+			// int theme;
+			// for (i = 0; i < len; i++) {
+			// 	current = &arr[i];
+			// 	if (current->type == INT) theme = (int)((long int)current->info);
+			// 	else theme = ((Theme *)current->info)->big;
+
+			// 	printf("got color path:%s\n", (char *)(&colorArr[theme + 1])->info); exit(1);
+			// 	printDataObj(current);
+			// 	SEP1;
+			// 	printf("icon");
+			// 	SEP2;
+			// 	printf("%s/%s", home, (char *)(&colorArr[theme + 1])->info);
+			// 	putchar('\n');
+			// }
 		}
+
 	} else {
 		printf("show sub\n");
 	}
