@@ -47,8 +47,9 @@ void printThemeOptions(Data *data, char *theme) {
 	printf("%s/%s\n", getenv("HOME"), (char *)getValue(dataobj));
 
 	// each iteration gets a struct with the theme currently displayed, and the original data
-	LoopInfo info = {themeInt, data};
-	g_hash_table_foreach(getTable(data), generateThemeOptions, (void *)&info);
+	// LoopInfo info = {themeInt, data};
+	// g_hash_table_foreach(getTable(data), generateThemeOptions, (void *)&info);
+	generateThemeOptions(data, themeInt);
 	printf("Back\n");
 	// SEP1;
 	// printf("info");

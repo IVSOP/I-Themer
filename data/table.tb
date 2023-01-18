@@ -8,8 +8,8 @@ rofi;1;show_sub
 i3;1.9;apply;.config/i3/themes/i3/0/theme-0;.config/i3/themes/i3/1/theme-1;.config/i3/themes/i3/2/theme-2
 
 polybar:
-theme;apply
-bar;apply
+theme;1;apply
+bar;1;apply
 
 rofi:
 dmenu-theme;1;apply;.config/i3/themes/rofi/0/dmenu-theme-0.rasi;.config/i3/themes/rofi/1/dmenu-theme-1.rasi

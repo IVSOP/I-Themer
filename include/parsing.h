@@ -20,10 +20,10 @@ typedef enum {
 typedef struct DataObj DataObj;
 typedef struct Data Data;
 typedef struct DataObjArray DataObjArray;
-typedef struct {
-	int selected_theme;
-	Data *data;
-} LoopInfo;
+// typedef struct {
+// 	int selected_theme;
+// 	Data *data;
+// } LoopInfo;
 typedef struct Theme Theme;
 
 typedef void freeFunc(void *);
@@ -42,7 +42,7 @@ DataObj *getDataObj(DataObjArray *data, int i);
 int getActivePerTheme(int theme);
 void *getValue(DataObj *data);
 GHashTable *getTable(Data *data);
-void generateThemeOptions(gpointer key, gpointer value, gpointer user_data);
+void generateThemeOptions(Data *data, int theme);
 void executeChange(Data *data, char * input);
 
 #endif
