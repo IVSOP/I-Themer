@@ -37,6 +37,7 @@ void printThemeOptions(Data *data, char *theme) {
 
 	DataObjArray * arr = tableLookup(data, "color-icons");
 	DataObj *dataobj = getDataObj(arr, themeInt + 1);
+
 	SEP1;
 	printf("prompt");
 	SEP2;
@@ -60,16 +61,19 @@ void printThemeOptions(Data *data, char *theme) {
 
 // this should be changed to something faster
 void inputHandler(Data *data, char *input) {
+	char * info;
 	if (strncmp("Theme", input, 5) == 0) { // selected theme from main menu
 		printThemeOptions(data, input + 6);
 	} else if (strncmp("Done", input, 4) == 0) {
 		return;
 	} else if (strncmp("Back", input, 4) == 0) {
-		char *info = getenv("ROFI_INFO");
+		info = getenv("ROFI_INFO");
 		if (info == NULL) printMainOptions(data); // back to main menu
 		else { // back to previous option (for now, goes back to theme selection)
 			printThemeOptions(data, info + 6); // Theme x
 		}
+	} else if (strncmp("Theme", (info = getenv("ROFI_INFO")), 5) == 0) { // applied an option, going back to theme selection
+		printThemeOptions(data, info + 6);
 	} else { // clicked an option like "background", info contains theme it was picked in
 		executeChange(data, input);
 	}

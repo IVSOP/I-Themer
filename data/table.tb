@@ -5,7 +5,7 @@ dunst;1;apply;.config/i3/themes/dunst/0/dunstrc-0;.config/i3/themes/dunst/1/duns
 i3lock;1;apply;.config/i3/lock/noise_red.png;.config/i3/lock/noise_blue.png;.config/i3/lock/noise_white.png
 polybar;1;show_sub
 rofi;1;show_sub
-i3;1.9;apply;.config/i3/themes/i3/0/theme-0;.config/i3/themes/i3/1/theme-1;.config/i3/themes/i3/2/theme-2
+i3;1;apply;.config/i3/themes/i3/0/theme-0;.config/i3/themes/i3/1/theme-1;.config/i3/themes/i3/2/theme-2
 
 polybar:
 theme;1;apply
