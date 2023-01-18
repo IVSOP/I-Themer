@@ -373,26 +373,14 @@ void executeChange(Data *data, char * input) {
 	// printf("'%s'\n", (char *)g_ptr_array_index(data->dependency_array, 1));
 
 	DataObjArray *dataobjarray = tableLookup(data, input);
+	if (dataobjarray == NULL) {
+		printf("Received %s, not found in main table\nInfo is%s\n", input, getenv("ROFI_INFO"));
+		exit(1);
+	}
 	DataObj *themeobj = &(dataobjarray->arr)[1];
 
 	char *endptr;
-	// long int res = strtol(getenv("ROFI_INFO"), &endptr, 10);
-
-
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	long int res = strtol("0", &endptr, 10);
-
-
+	long int res = strtol(getenv("ROFI_INFO"), &endptr, 10);
 
 	Theme new_theme = {(int)res, 0};
 	if (*endptr == '.') {
@@ -445,6 +433,7 @@ void executeOnclick(Data * data, DataObjArray *dataobjarray, Theme *new_theme, T
 	DataObj *themeObj = &dataobjarray->arr[1];
 	DataObj *current;
 	char cmd = command[5];
+	char *home = getenv("HOME");
 	if (cmd == '\0') {
 		// even if themes are the same you can just apply them
 		freeDataObj(themeObj);
@@ -461,13 +450,6 @@ void executeOnclick(Data * data, DataObjArray *dataobjarray, Theme *new_theme, T
 		DataObjArray *list = (DataObjArray *)dataobjarray->arr[new_theme->big + 3].info;
 		DataObj *arr = list->arr;
 		int i, len = list->len;
-		char *home = getenv("HOME");
-
-		// 3) finish this for loop, somehow I need to pass something as INFO that allows inputHandler to call a function to change themes (should be like "swap background 1.4" to say theme 1 list[4 - 1])
-		// 4) finish else of this function
-		// 5) finish saveTableToFile
-		// 6) upgrade executeOnclick to show themes that are active
-		// 7) why did i make the dependency array????
 		
 		// i dont like this being hardcoded, but it was the simplest way
 		// background icons are not the color theme but the picture itself
@@ -480,33 +462,51 @@ void executeOnclick(Data * data, DataObjArray *dataobjarray, Theme *new_theme, T
 				printf("icon");
 				SEP2;
 				printf("%s/%s", home, (char *)current->info);
-				putchar('\n');
+				SEP2;
+				printf("info"); // format: x.y-background
+				SEP2;
+				printf("%d.%d-%s\n", new_theme->big, i + 1, "background"); // background hardcoded idc
 			}
+			// I tried using nonselectable, but didnt understand how it worked
+			// will leave it to the user to not repeat selections, but program will do them anyway probably
 			SEP1;
 			printf("active");
 			SEP2;
-			printf("%d\n", original_theme->small - 1);
+			printf("%d", original_theme->small - 1);
 		} else {
 			printf("show_var for things other that background not complete\n"); exit(5);
-			// DataObj *colorArr = ((DataObjArray *)g_hash_table_lookup(data->main_table, "color-icons"))->arr;
-			// int theme;
-			// for (i = 0; i < len; i++) {
-			// 	current = &arr[i];
-			// 	if (current->type == INT) theme = (int)((long int)current->info);
-			// 	else theme = ((Theme *)current->info)->big;
-
-			// 	printf("got color path:%s\n", (char *)(&colorArr[theme + 1])->info); exit(1);
-			// 	printDataObj(current);
-			// 	SEP1;
-			// 	printf("icon");
-			// 	SEP2;
-			// 	printf("%s/%s", home, (char *)(&colorArr[theme + 1])->info);
-			// 	putchar('\n');
-			// }
 		}
 
 	} else {
-		printf("show sub\n");
+		DataObj *colorArr = ((DataObjArray *)g_hash_table_lookup(data->main_table, "color-icons"))->arr;
+		Data *dep = dataobjarray->dependency_table;
+		GHashTableIter iter;
+		char *key = NULL;
+		DataObjArray *current = NULL;
+		DataObj *arr;
+		Theme theme;
+
+		g_hash_table_iter_init (&iter, dep->main_table);
+		while (g_hash_table_iter_next (&iter, (void **)&key, (void **)&current))
+		{
+			arr = current->arr;
+			if ((&arr[1])->type == INT) {
+				theme.big = (int)((long int)((&arr[1])->info));
+				theme.small = 0;
+			} else {
+				theme = *((Theme *)(&arr[1])->info);
+			}
+			printf("%s", key);
+			SEP1;
+			printf("info"); //format: x.y-command, just like in background
+			SEP2;
+			printf("%d.%d-%s", theme.big, theme.small, command);
+			SEP2;
+			printf("icon");
+			SEP2;
+			printf("%s/%s\n", home, (char *)(&colorArr[theme.big + 1])->info);
+		}
+		// missing showing active lines
 	}
 }
 
