@@ -24,6 +24,16 @@ typedef struct Theme Theme;
 
 typedef void freeFunc(void *);
 
+//handlers
+typedef void handlerFunc(Data *, char *, int);
+void queryHandler(Data *data, char *query);
+void applyHandler(Data *data, char *info, int offset);
+void varHandler(Data *data, char *info, int offset);
+void subHandler(Data *data, char *info, int offset);
+
+//displayers (same type as handlerFunc)
+void displayVar2(Data *data, char *str, int offset);
+
 char *readString(char *str, int *len);
 int readStringDelim(FILE *fp, char delim, char *buffer);
 Data *parseMainTable(FILE *);
@@ -40,6 +50,5 @@ void *getValue(DataObj *data);
 GHashTable *getTable(Data *data);
 void generateThemeOptions(Data *data, int theme);
 void executeChange(Data *data, char * input);
-void queryHandler(Data *data, char *query);
 
 #endif

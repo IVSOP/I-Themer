@@ -357,16 +357,18 @@ void generateThemeOptions(Data *data, int selected_theme) {
 	int theme;
 
 	int active[g_hash_table_size(data->main_table) - 1], i;
+	int mode;
 
 	g_hash_table_iter_init (&iter, data->main_table);
 	for (i = 0; g_hash_table_iter_next (&iter, (void **)&key, (void **)&current); i++) {
 		if (strcmp("color-icons", (char *)key) != 0) {
 			arr = current->arr;
+			mode = ((char *)(&arr[2])->info)[5] / 59;
 			printf("%s", key);
 			SEP1;
 			printf("info");
 			SEP2;
-			printf("%d.%d-%s", selected_theme, 0, key);
+			printf("theme%d/%s(%d.0)", selected_theme, key, mode);
 			SEP2;
 			printf("icon");
 			SEP2;
@@ -390,7 +392,8 @@ void generateThemeOptions(Data *data, int selected_theme) {
 			printf("%d,", i + 1);
 		}
 	}
-	putchar('\n');
+	printf("\nBack\n");
+	// info is not defined so it will be null and take you back to main menu
 }
 
 GHashTable *getTable(Data *data) {
@@ -799,23 +802,77 @@ void queryHandler(Data *data, char *query) {
 			printf("%s\n", (char *)(current->info));
 			
 		}
-
-	//} else { if (command == 1) {
-	// 	char *arg1 = endptr, *arg2, *arg3;
-	// 	for (arg2 = endptr; *arg2 != '-'; arg2++);
-	// 	arg2[0] = '\0';
-	// 	arg2++;
-	// 	for (arg3 = arg2; *arg3 != '\0' && *arg3 != '-'; arg3++);
-	// 	if (*arg3 == '\0') { // subname not provided
-	// 		arg3 = NULL;
-	// 	} else {
-	// 		arg3[0] = '\0';
-	// 		arg3++;
-	// 	}
-	// 	printf("'%s' '%s' '%s'\n", arg1, arg2, arg3);
-	// 	// no error checking for further arguments!!!
 	} else {
 		printf("Query not implemented\n");
 		exit(1);
 	}
+}
+
+void applyHandler(Data *data, char *info, int offset) {
+	printf("apply\n");
+}
+
+void varHandler(Data *data, char *info, int offset) {
+	int i;
+	for (i = offset; info[i] != '\0' && info[i] != '/'; i++);
+	if (info[i] == '\0') { // ends here, nothing needs to be changed and options need to be displayed
+		displayVar2(data, info, offset);
+	} else { // does not end here, need to go into other option/menu
+			// int j;
+			// for (j = i + 1; info[j] != '('; j++);
+			// handlerFunc *handlers[] = {applyHandler, subHandler, varHandler};
+			// handlers[(int)(info[j + 1] - 48)](data, info, i + 1);
+	}
+}
+
+void subHandler(Data *data, char *info, int offset) {
+	printf("sub\n");
+}
+
+// input format: .../<option>(2)
+// output info format: <original info>/<option number>
+void displayVar2(Data *data, char *str, int offset) {
+	int i;
+	for (i = offset; str[i] != '('; i++);
+	str[i] = '\0';
+	DataObjArray *dataobjarray = (DataObjArray *)g_hash_table_lookup(data->main_table, str + offset);
+	str[i] = '(';
+	int theme = atoi(str + offset - 2);
+	
+	// NOTE: For now, it is assumed that show_var is used with lists, whose items should be applied
+	// no error checking is performed
+	Theme *original_theme = (Theme *)((&(dataobjarray->arr[1]))->info);
+	DataObjArray *list = (DataObjArray *)((&dataobjarray->arr[theme + 3])->info);
+	DataObj *arr = list->arr, *current;
+	int len = list->len;
+
+	// I assume that if type is show_var then the theme must be version and not int
+	// I also assume all elements in list are strings
+
+	char *home = getenv("HOME");
+	for (i = 0; i < len; i++) {
+		current = &arr[i];
+		printDataObj(current);
+		SEP1;
+		printf("icon");
+		SEP2;
+		printf("%s/%s", home, (char *)current->info);
+		SEP2;
+		printf("info"); // format: x.y-background
+		SEP2;
+		printf("%s/%d\n", str, i + 1);
+	}
+	if (theme == original_theme->big) {
+		SEP1;
+		printf("active");
+		SEP2;
+		printf("%d\n", original_theme->small - 1);
+	}
+
+	str[offset - 1] = '\0';
+	printf("Back");
+	SEP1;
+	printf("info");
+	SEP2;
+	printf("%s\n", str);
 }
