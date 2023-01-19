@@ -732,6 +732,7 @@ void outEmpty(void *data, FILE *fp) {
 // 0: lookup <name>-<subname> (subname only if it has sub tables)
 // 1: change to (not implemented) <theme>-<name>-<subname>
 void queryHandler(Data *data, char *query) {
+	printf("NOT WORKING\n"); exit(1);
 	char *endptr;
 	long int command = strtol(query, &endptr, 10);
 	endptr++;
@@ -807,11 +808,26 @@ void queryHandler(Data *data, char *query) {
 	}
 }
 
+// input format: .../<option>(0)/...
+// explanation: applying is allways relative to something that has happened before
+// nothing relevant happened: aplly directly
+// previous entry was sub: need to apply inside the table of the sub
+// previous entry was var: need to apply to it, and not to what is inside the var directly
+// NOTE: in case of the sub, to avoid large time looking up sub inside sub inside sub...
+// it is assumed that the Data * that is passed is already the dependency data of the last sub
 void applyHandler(Data *data, char *info, int offset) {
-	printf("apply\n");
+	// checks if nothing relevant happened
+	int i;
+	for (i = 0; info[i] != '/'; i++);
+	if (i + 1 == offset) { // apply directly
+		printf("direct apply\n");
+	} else {
+		int previous_mode = (int)info[offset - 3] - 49;
+		printf("previous mode: %d %s %s\n", previous_mode, info, info + offset);
+	}
 }
 
-// str = .../.../<option>(2)/...
+// input format: .../<option>(2)/..., offset is first char after /
 void varHandler(Data *data, char *info, int offset) {
 	int i;
 	for (i = offset; info[i] != '\0' && info[i] != '/'; i++);
@@ -821,18 +837,21 @@ void varHandler(Data *data, char *info, int offset) {
 		char *endptr;
 		long int res = strtol(info + i + 1, &endptr, 10);
 		if (endptr != info + i + 1) { // .../<option>(2)/<x> need to apply changes
+			int j;
 			// same assumption as in displayVar
-			for (i = offset; info[i] != '('; i++);
-			info[i] = '\0';
+			for (j = offset; info[j] != '('; j++);
+			info[j] = '\0';
 			DataObjArray *dataobjarray = (DataObjArray *)g_hash_table_lookup(data->main_table, info + offset);
-			info[i] = '(';
+			info[j] = '(';
 			// theme<x>...
 			int new_theme = atoi(info + 5);
 			Theme *theme = (Theme *)((&dataobjarray->arr[1])->info);
 			// printf("changing theme from %d.%d to %d.%d\n", theme->big, theme->small, new_theme, (int)res);
 			theme->big = new_theme;
 			theme->small = (int)res;
-
+			// go back to before click
+			info[i] = '\0';
+			displayVar2(data, info, offset);
 		} else { // .../<option>(2)/<option>(<m>) need to keep displaying options
 			printf("Advanced recursion incomplete (%s)\n", __func__);
 			exit(1);
@@ -841,19 +860,17 @@ void varHandler(Data *data, char *info, int offset) {
 			// handlerFunc *handlers[] = {applyHandler, subHandler, varHandler};
 			// handlers[(int)(info[j + 1] - 48)](data, info, i + 1);
 		}
-			// int j;
-			// for (j = i + 1; info[j] != '('; j++);
-			// handlerFunc *handlers[] = {applyHandler, subHandler, varHandler};
-			// handlers[(int)(info[j + 1] - 48)](data, info, i + 1);
 	}
 }
 
+// input format: .../<option>(1)/...
 void subHandler(Data *data, char *info, int offset) {
-	printf("sub\n");
+	// need to pass secondary table!!!
+	printf("sub %s %s\n", info, info + offset);
 }
 
-// input format: .../<option>(2)
-// output info format: <original info>/<option number>
+// input format: .../<option>(2)/...
+// output format: <original info>/<option number>
 void displayVar2(Data *data, char *str, int offset) {
 	int i;
 	for (i = offset; str[i] != '('; i++);

@@ -44,6 +44,9 @@ void printThemeOptions(Data *data, int theme) {
 
 void inputHandler(Data *data, char *input) {
 	char * info = getenv("ROFI_INFO");
+	if (input != NULL && strncmp("query", input, 5) == 0) {
+		queryHandler(data, input + 6);
+	}
 	if (info == NULL) { // ""
 		printMainOptions(data);
 	} else {
@@ -51,7 +54,7 @@ void inputHandler(Data *data, char *input) {
 		for (i = 0; info[i] != '\0' && info[i] != '/'; i++);
 		if (info[i] == '\0') { // "theme<x>"
 			printThemeOptions(data, atoi(info + 5));
-		} else { // "theme<x>/option(<m>)" m can be 0(apply), 1(show_sub) or 2(show_var) 0=0  1=115 2=118 so just /59
+		} else { // "theme<x>/option(<m>)/..." m can be 0(apply), 1(show_sub) or 2(show_var) 0=0  1=115 2=118 so just /59
 			int j;
 			for (j = i + 1; info[j] != '('; j++);
 			handlerFunc *handlers[] = {applyHandler, subHandler, varHandler};
@@ -62,7 +65,7 @@ void inputHandler(Data *data, char *input) {
 		}
 	}
 	// saveTableToFile(data);
-	dumpTable(data, 0);
+	// dumpTable(data, 0);
 	
 	// if (strncmp("Theme", input, 5) == 0) { // selected theme from main menu
 	// 	printThemeOptions(data, input + 6);
