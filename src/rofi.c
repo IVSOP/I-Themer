@@ -61,6 +61,8 @@ void inputHandler(Data *data, char *input) {
 			// 	break;
 		}
 	}
+	// saveTableToFile(data);
+	dumpTable(data, 0);
 	
 	// if (strncmp("Theme", input, 5) == 0) { // selected theme from main menu
 	// 	printThemeOptions(data, input + 6);

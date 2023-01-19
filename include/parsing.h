@@ -34,6 +34,8 @@ void subHandler(Data *data, char *info, int offset);
 //displayers (same type as handlerFunc)
 void displayVar2(Data *data, char *str, int offset);
 
+void saveTableToFile(Data *data);
+
 char *readString(char *str, int *len);
 int readStringDelim(FILE *fp, char delim, char *buffer);
 Data *parseMainTable(FILE *);

@@ -33,7 +33,6 @@ void freeTableStruct(void *data);
 void dumpDataObjArray(DataObjArray *, long int depth);
 void dumpTableEntry(gpointer key, gpointer value, gpointer user_data);
 void executeOnclick(Data * data, DataObjArray *dataobjarray);
-void saveTableToFile(Data *data);
 void displaySub(Data *data, DataObjArray *dataobjarray, char * command);
 void displayVar(Data *data, DataObjArray *dataobjarray);
 void executeVar(Data *data, Theme *new_theme, DataObj *themeobj);
@@ -812,12 +811,36 @@ void applyHandler(Data *data, char *info, int offset) {
 	printf("apply\n");
 }
 
+// str = .../.../<option>(2)/...
 void varHandler(Data *data, char *info, int offset) {
 	int i;
 	for (i = offset; info[i] != '\0' && info[i] != '/'; i++);
 	if (info[i] == '\0') { // ends here, nothing needs to be changed and options need to be displayed
 		displayVar2(data, info, offset);
-	} else { // does not end here, need to go into other option/menu
+	} else { // does not end here
+		char *endptr;
+		long int res = strtol(info + i + 1, &endptr, 10);
+		if (endptr != info + i + 1) { // .../<option>(2)/<x> need to apply changes
+			// same assumption as in displayVar
+			for (i = offset; info[i] != '('; i++);
+			info[i] = '\0';
+			DataObjArray *dataobjarray = (DataObjArray *)g_hash_table_lookup(data->main_table, info + offset);
+			info[i] = '(';
+			// theme<x>...
+			int new_theme = atoi(info + 5);
+			Theme *theme = (Theme *)((&dataobjarray->arr[1])->info);
+			// printf("changing theme from %d.%d to %d.%d\n", theme->big, theme->small, new_theme, (int)res);
+			theme->big = new_theme;
+			theme->small = (int)res;
+
+		} else { // .../<option>(2)/<option>(<m>) need to keep displaying options
+			printf("Advanced recursion incomplete (%s)\n", __func__);
+			exit(1);
+			// int j;
+			// for (j = i + 1; info[j] != '('; j++);
+			// handlerFunc *handlers[] = {applyHandler, subHandler, varHandler};
+			// handlers[(int)(info[j + 1] - 48)](data, info, i + 1);
+		}
 			// int j;
 			// for (j = i + 1; info[j] != '('; j++);
 			// handlerFunc *handlers[] = {applyHandler, subHandler, varHandler};
