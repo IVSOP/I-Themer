@@ -4,6 +4,7 @@
 
 #define SEP1 putchar('\0')
 #define SEP2 putchar('\x1f')
+#define TABLE_PATH "I-Themer/data/table.tb"
 
 // SEE HOW POWERMENU SCRIPT HANDLES ICONS
 
@@ -76,7 +77,7 @@ void inputHandler(Data *data, char *input) {
 
 int mainRofiLoop(char *input) {
 	// FILE *fp = fopen(filename, "r");
-	FILE *fp = fopen("data/table.tb", "r");
+	FILE *fp = fopen(TABLE_PATH, "r");
 	while (fgetc(fp) != '\n'); // skip first line
 	// Data *data = getData(fp);
 	Data *data = parseMainTable(fp);
