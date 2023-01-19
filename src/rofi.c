@@ -5,6 +5,7 @@
 #define SEP1 putchar('\0')
 #define SEP2 putchar('\x1f')
 #define TABLE_PATH "I-Themer/data/table.tb"
+#define INFO_SIZE 512
 
 // SEE HOW POWERMENU SCRIPT HANDLES ICONS
 
@@ -43,13 +44,18 @@ void printThemeOptions(Data *data, int theme) {
 }
 
 void inputHandler(Data *data, char *input) {
-	char * info = getenv("ROFI_INFO");
+	char * original_info = getenv("ROFI_INFO");
 	if (input != NULL && strncmp("query", input, 5) == 0) {
 		queryHandler(data, input + 6);
 	}
-	if (info == NULL) { // ""
+	if (original_info == NULL) { // ""
 		printMainOptions(data);
 	} else {
+		// when varHandler calls displayVar, what happens if string overflows????????
+		// info used big alloca just to be safe
+		char *info = alloca(sizeof(char) * INFO_SIZE);
+		strcpy(info, original_info);
+
 		int i;
 		for (i = 0; info[i] != '\0' && info[i] != '/'; i++);
 		if (info[i] == '\0') { // "theme<x>"
@@ -64,7 +70,7 @@ void inputHandler(Data *data, char *input) {
 			// 	break;
 		}
 	}
-	// saveTableToFile(data);
+	saveTableToFile(data);
 	// dumpTable(data, 0);
 	
 	// if (strncmp("Theme", input, 5) == 0) { // selected theme from main menu

@@ -2,4 +2,4 @@
 themer*
 .vscode*
 build/
-data/
+data/*

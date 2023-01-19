@@ -17,6 +17,3 @@ int main (int argc, char **argv) {
 	if (argc == 0) return mainRofiLoop(NULL);
 	return mainRofiLoop(argv[1]);
 }
-
-// when varHandler calls displayVar, what happens if string overflows????????
-// original info may need gigantic alloca just to be safe

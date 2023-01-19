@@ -1,4 +1,5 @@
 #include "parsing.h"
+#include "rofi.h"
 
 #define SEP1 putchar('\0')
 #define SEP2 putchar('\x1f')
@@ -808,23 +809,58 @@ void queryHandler(Data *data, char *query) {
 	}
 }
 
-// input format: .../<option>(0)/...
+void changeTheme(DataObj *arr, int big, int small) {
+	DataObj *themeobj = &arr[1];
+	if (themeobj->type == INT) {
+		if (small == 0) {
+			themeobj->info = (void *)((long int)big);
+		} else {
+			Theme *new = malloc(sizeof(Theme));
+			new->big = big; new->small = small;
+			themeobj->info = (void *)new;
+			themeobj->type = INT_VERSION;
+		}
+	} else if (themeobj->type == INT_VERSION) {
+		if (small == 0) {
+			free(themeobj->info);
+			themeobj->info = (void *)((long int)big);
+			themeobj->type = INT;
+		} else {
+			Theme *theme = (Theme *)themeobj->info;
+			theme->big = big;
+			theme->small = small;
+		}
+	}
+}
+
+// input format: .../<option>(0)
 // explanation: applying is allways relative to something that has happened before
 // nothing relevant happened: aplly directly
 // previous entry was sub: need to apply inside the table of the sub
 // previous entry was var: need to apply to it, and not to what is inside the var directly
-// NOTE: in case of the sub, to avoid large time looking up sub inside sub inside sub...
+// NOTE: in case of the sub, to avoid large time looking up sub inside sub inside sub...,
 // it is assumed that the Data * that is passed is already the dependency data of the last sub
 void applyHandler(Data *data, char *info, int offset) {
 	// checks if nothing relevant happened
 	int i;
 	for (i = 0; info[i] != '/'; i++);
 	if (i + 1 == offset) { // apply directly
-		printf("direct apply\n");
+		for (i = offset; info[i] != '('; i++);
+		info[i] = '\0';
+		DataObjArray *dataobjarray = (DataObjArray *)g_hash_table_lookup(data->main_table, info + offset);
+		// info[i] = '(';
+		// info is theme<x>/...
+		int theme = atoi(info + 5);
+		changeTheme(dataobjarray->arr, theme, 0);
+		// back to previous menu
+		// info[i] is already \0
+		// cant just call input handler, too much of a mess
+		printThemeOptions(data, theme);
 	} else {
 		int previous_mode = (int)info[offset - 3] - 49;
 		printf("previous mode: %d %s %s\n", previous_mode, info, info + offset);
 	}
+
 }
 
 // input format: .../<option>(2)/..., offset is first char after /
@@ -834,6 +870,7 @@ void varHandler(Data *data, char *info, int offset) {
 	if (info[i] == '\0') { // ends here, nothing needs to be changed and options need to be displayed
 		displayVar2(data, info, offset);
 	} else { // does not end here
+		// call apply handler??????????????????????????????????????'
 		char *endptr;
 		long int res = strtol(info + i + 1, &endptr, 10);
 		if (endptr != info + i + 1) { // .../<option>(2)/<x> need to apply changes
