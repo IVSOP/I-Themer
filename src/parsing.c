@@ -690,6 +690,7 @@ void displaySub(Data *data, char *str, int offset) {
 	DataObj *arr;
 
 	// output format: .../<option>(1)/<option>(<m>)
+	int theme;
 	char mode, *home = getenv("HOME"), *infostr;
 	g_hash_table_iter_init (&iter, dep->main_table);
 	while (g_hash_table_iter_next (&iter, (void **)&key, (void **)&current))
@@ -697,6 +698,8 @@ void displaySub(Data *data, char *str, int offset) {
 		arr = current->arr;
 		mode = ((char *)((&arr[2])->info))[5];
 		infostr = (char *)((&arr[0])->info);
+		// assume it can only be int or int_version
+		theme =	(&arr[1])->type == INT ? (int)((long int)((&arr[1])->info)) : ((Theme *)((&arr[1])->info))->big;
 		printf("%s", infostr);
 		SEP1;
 		printf("info");
@@ -705,7 +708,7 @@ void displaySub(Data *data, char *str, int offset) {
 		SEP2;
 		printf("icon");
 		SEP2;
-		printf("%s/%s\n", home, getColor(data, atoi(str + i + 1) + 1));
+		printf("%s/%s\n", home, getColor(data, theme));
 	}
 
 	// missing showing active lines
