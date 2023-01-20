@@ -33,6 +33,7 @@ void subHandler(Data *data, char *info, int offset);
 
 //displayers (same type as handlerFunc)
 void displayVar2(Data *data, char *str, int offset);
+void displaySub2(Data *data, char *str, int offset);
 
 void saveTableToFile(Data *data, char *name);
 
