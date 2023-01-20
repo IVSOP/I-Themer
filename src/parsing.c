@@ -789,8 +789,19 @@ void subHandler(Data *data, char *info, int offset) {
 	for (i = offset; info[i] != '\0' && info[i] != '/'; i++);
 	if (info[i] == '\0') { // ends here, nothing needs to be changed and options need to be displayed
 		displaySub2(data, info, offset);
-	} else {
-		printf("received %s\n%s\n", info, info + offset);
+	} else { // .../<option>(1)/<option>(<m>) need to call apropriate function just like inputHandler would, but cant call it
+		int j;
+		for (j = offset; info[j] != '('; j++);
+		info[j] = '\0';
+		info[i] = '\0';
+		DataObjArray *dataobjarray = (DataObjArray *)g_hash_table_lookup(data->main_table, info + offset);
+		info[j] = '(';
+		info[i] = '/';
+		// inputHandler(dataobjarray->dependency_table, info + i + 1);
+		for (j = i + 1; info[j] != '('; j++);
+		handlerFunc *handlers[] = {applyHandler, subHandler, varHandler};
+		handlers[(int)(info[j + 1] - 48)](dataobjarray->dependency_table, info, i + 1);
+
 	}
 }
 
