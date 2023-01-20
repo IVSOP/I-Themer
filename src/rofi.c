@@ -98,10 +98,12 @@ int mainRofiLoop(char *input) {
 	FILE *fp = fopen(TABLE_PATH, "r");
 	// Data *data = getData(fp);
 	Data *data = parseMainTable(fp);
+	if (data == NULL) {printf("wtf\n"); exit(1);}
 
 	inputHandler(data, input);
 
 	// dumpTable(data, 0);
+	saveTableToFile(data, "table"); // this is inneficient, but it is the only way. doing it on applyHandler would break when data is actually a subtable and not a main table
 	freeTableData(data);
 	fclose(fp);
 	return 0;

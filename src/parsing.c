@@ -746,7 +746,6 @@ void applyHandler(Data *data, char *info, int offset) {
 		int previous_mode = (int)info[offset - 3] - 49;
 		printf("previous mode: %d %s %s\n", previous_mode, info, info + offset);
 	}
-	saveTableToFile(data, "table");
 }
 
 // input format: .../<option>(2)/..., offset is first char after /
@@ -775,7 +774,6 @@ void varHandler(Data *data, char *info, int offset) {
 			// go back to before click
 			info[i] = '\0';
 			displayVar2(data, info, offset);
-			saveTableToFile(data, "table");
 		} else { // .../<option>(2)/<option>(<m>) need to keep displaying options
 			printf("Advanced recursion incomplete (%s)\n", __func__);
 			exit(1);
@@ -801,7 +799,6 @@ void subHandler(Data *data, char *info, int offset) {
 		for (j = i + 1; info[j] != '('; j++);
 		handlerFunc *handlers[] = {applyHandler, subHandler, varHandler};
 		handlers[(int)(info[j + 1] - 48)](dataobjarray->dependency_table, info, i + 1);
-
 	}
 }
 
