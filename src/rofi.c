@@ -70,7 +70,7 @@ void inputHandler(Data *data, char *input) {
 			// 	break;
 		}
 	}
-	saveTableToFile(data);
+	// saveTableToFile(data);
 	// dumpTable(data, 0);
 	
 	// if (strncmp("Theme", input, 5) == 0) { // selected theme from main menu
@@ -96,14 +96,12 @@ void inputHandler(Data *data, char *input) {
 int mainRofiLoop(char *input) {
 	// FILE *fp = fopen(filename, "r");
 	FILE *fp = fopen(TABLE_PATH, "r");
-	while (fgetc(fp) != '\n'); // skip first line
 	// Data *data = getData(fp);
 	Data *data = parseMainTable(fp);
-	parseDependecyTables(data, fp); // prob inefficient but it works so idc
 
-	inputHandler(data, input);
+	// inputHandler(data, input);
 
-	// dumpTable(data, 0);
+	dumpTable(data, 0);
 	freeTableData(data);
 	fclose(fp);
 	return 0;
