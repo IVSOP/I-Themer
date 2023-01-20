@@ -37,18 +37,31 @@ void displaySub(Data *data, char *str, int offset);
 
 void saveTableToFile(Data *data, char *name);
 
+
+//parsing
+Data *parseMainTable(FILE *fp, GPtrArray *colorArr);
 char *readString(char *str, int *len);
-Data *parseMainTable(FILE *);
 DataObjArray *parseLine(FILE *fp);
-void freeTableData(Data *data);
-void dumpTable(Data *data, long int depth);
-DataObjArray *tableLookup(Data *data, char *str);
-int getLen(DataObjArray *data);
-void printValue(DataObj *data);
-DataObj *getDataObj(DataObjArray *data, int i);
-int getActivePerTheme(int theme);
-void *getValue(DataObj *data);
+GPtrArray *parseColors(char *name);
+
+//getters
 GHashTable *getTable(Data *data);
+void *getValue(DataObj *data);
+int getActivePerTheme(int theme);
+DataObj *getDataObj(DataObjArray *data, int i);
+int getLen(DataObjArray *data);
+DataObjArray *tableLookup(Data *data, char *str);
+char *getColor(Data *data, int theme);
+int getNumberOfColors(Data *data);
+
+//etc
 void generateThemeOptions(Data *data, int theme);
+void printValue(DataObj *data);
+
+//debug
+void dumpTable(Data *data, long int depth);
+
+//freeing
+void freeTableData(Data *data);
 
 #endif

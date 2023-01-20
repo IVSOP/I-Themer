@@ -10,27 +10,23 @@
 // SEE HOW POWERMENU SCRIPT HANDLES ICONS
 
 void printMainOptions(Data *data) {
-	DataObjArray * arr = tableLookup(data, "color-icons");
 	int i;
-	DataObj *dataobj;
 	char * home = getenv("HOME");
-	for (i = 1; (dataobj = getDataObj(arr, i)) != NULL; i++) {
-		printf("Theme %d --> %d", i - 1, getActivePerTheme(i - 1));
+	int len = getNumberOfColors(data);
+	for (i = 0; i < len; i++) {
+		printf("Theme %d --> %d", i, getActivePerTheme(i));
 		SEP1;
 		printf("info");
 		SEP2;
-		printf("theme%d", i - 1);
+		printf("theme%d", i);
 		SEP2;
 		printf("icon");
 		SEP2;
-		printf("%s/%s\n", home, (char *)getValue(dataobj));
+		printf("%s/%s\n", home, getColor(data, i));
 	}
 }
 
 void printThemeOptions(Data *data, int theme) {
-	DataObjArray * arr = tableLookup(data, "color-icons");
-	DataObj *dataobj = getDataObj(arr, theme + 1);
-
 	SEP1;
 	printf("prompt");
 	SEP2;
@@ -38,7 +34,7 @@ void printThemeOptions(Data *data, int theme) {
 	SEP1;
 	printf("icon");
 	SEP2;
-	printf("%s/%s\n", getenv("HOME"), (char *)getValue(dataobj));
+	printf("%s/%s\n", getenv("HOME"), getColor(data, theme));
 
 	generateThemeOptions(data, theme);
 }
@@ -65,25 +61,23 @@ void inputHandler(Data *data, char *input) {
 			for (j = i + 1; info[j] != '('; j++);
 			handlerFunc *handlers[] = {applyHandler, subHandler, varHandler};
 			handlers[(int)(info[j + 1] - 48)](data, info, i + 1);
-			// default:
-			// 	printf("Error\n");
-			// 	break;
 		}
 	}
 }
 
 int mainRofiLoop(char *input) {
-	// FILE *fp = fopen(filename, "r");
 	FILE *fp = fopen(TABLE_PATH, "r");
-	// Data *data = getData(fp);
-	Data *data = parseMainTable(fp);
-	if (data == NULL) {printf("wtf\n"); exit(1);}
+
+	GPtrArray *colorArr = parseColors("color-icons");
+
+	Data *data = parseMainTable(fp, colorArr);
 
 	inputHandler(data, input);
 
 	// dumpTable(data, 0);
 	saveTableToFile(data, "table"); // this is inneficient, but it is the only way. doing it on applyHandler would break when data is actually a subtable and not a main table
 	freeTableData(data);
+	g_ptr_array_free(colorArr, TRUE);
 	fclose(fp);
 	return 0;
 }

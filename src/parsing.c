@@ -13,7 +13,7 @@ struct DataObj {
 
 struct Data {
 	GHashTable *main_table;
-	// GPtrArray *dependency_array;
+	GPtrArray *color_icons;
 };
 
 //contains data from an entire line
@@ -146,7 +146,7 @@ DataObjArray *parseLine(FILE *fp) {
 }
 
 // returns NULL on EOF
-Data *parseMainTable(FILE *fp) {
+Data *parseMainTable(FILE *fp, GPtrArray *colorArr) {
 	Data *data = malloc(sizeof(Data));
 
 	// key destroy func is NULL since they will be freed when the remaining data is freed (they are shared)
@@ -160,7 +160,7 @@ Data *parseMainTable(FILE *fp) {
 			char str[BUFFER_SIZE];
 			snprintf(str, BUFFER_SIZE, "%s/%s.tb", TABLE_PATH, (char *)(&lineData->arr[0])->info);
 			FILE *fp2 = fopen(str, "r");
-			lineData->dependency_table = parseMainTable(fp2);
+			lineData->dependency_table = parseMainTable(fp2, colorArr);
 			fclose(fp2);
 		}
 		tmp = &(lineData->arr)[0];
@@ -180,9 +180,7 @@ Data *parseMainTable(FILE *fp) {
 		return NULL;
 	}
 	data->main_table = table;
-	// data->dependency_array = NULL;
-	
-	// data->n_of_themes = max_len-2;
+	data->color_icons = colorArr;
 	return data;
 }
 
@@ -292,7 +290,6 @@ void *getValue(DataObj *data) {
 }
 
 void generateThemeOptions(Data *data, int selected_theme) {
-	DataObj *colorArr = ((DataObjArray *)g_hash_table_lookup(data->main_table, "color-icons"))->arr;
 	GHashTableIter iter;
 	char *key = NULL;
 	DataObjArray *current = NULL;
@@ -305,27 +302,25 @@ void generateThemeOptions(Data *data, int selected_theme) {
 
 	g_hash_table_iter_init (&iter, data->main_table);
 	for (i = 0; g_hash_table_iter_next (&iter, (void **)&key, (void **)&current); i++) {
-		if (strcmp("color-icons", (char *)key) != 0) {
-			arr = current->arr;
-			mode = ((char *)(&arr[2])->info)[5] / 59;
-			printf("%s", key);
-			SEP1;
-			printf("info");
-			SEP2;
-			printf("theme%d/%s(%d)", selected_theme, key, mode);
-			SEP2;
-			printf("icon");
-			SEP2;
-			// no matter subtheme, colors is of the main theme
-			if (arr[1].type == INT) {	
-				theme = (int)((long int)(arr[1].info));
-			} else { // INT_VERSION
-				theme = ((Theme *)arr[1].info)->big;
-			}
-			printf("%s/%s\n", home, (char *)(colorArr[theme + 1].info));
+		arr = current->arr;
+		mode = ((char *)(&arr[2])->info)[5] / 59;
+		printf("%s", key);
+		SEP1;
+		printf("info");
+		SEP2;
+		printf("theme%d/%s(%d)", selected_theme, key, mode);
+		SEP2;
+		printf("icon");
+		SEP2;
+		// no matter subtheme, colors is of the main theme
+		if (arr[1].type == INT) {	
+			theme = (int)((long int)(arr[1].info));
+		} else { // INT_VERSION
+			theme = ((Theme *)arr[1].info)->big;
+		}
+		printf("%s/%s\n", home, getColor(data, theme));
 
-			active[i] = theme == selected_theme ? 1 : 0;
-		} else i--;
+		active[i] = theme == selected_theme ? 1 : 0;
 	}
 	SEP1;
 	printf("active");
@@ -568,9 +563,10 @@ void applyHandler(Data *data, char *info, int offset) {
 	} else {
 		for (i = offset - 2; info[i] != '/'; i--);
 		if (info[offset - 3] == '1') { // sub
+			// this was crashing because color-info can only be lookep up in the main file
+			// to fix it, I will make it so any Data * has access to it
 			subHandler(data, info, i + 1);
 		} else { // var
-		printf("var\n");
 			varHandler(data, info, i + 1);
 		}
 	}
@@ -687,7 +683,6 @@ void displaySub(Data *data, char *str, int offset) {
 	// int theme = atoi(str + 5);
 
 	// need to show all options of the subtable
-	DataObj *colorArr = ((DataObjArray *)g_hash_table_lookup(data->main_table, "color-icons"))->arr;
 	Data *dep = dataobjarray->dependency_table;
 	GHashTableIter iter;
 	char *key = NULL;
@@ -710,7 +705,7 @@ void displaySub(Data *data, char *str, int offset) {
 		SEP2;
 		printf("icon");
 		SEP2;
-		printf("%s/%s\n", home, (char *)(colorArr[atoi(str + i + 1) + 1].info));
+		printf("%s/%s\n", home, getColor(data, atoi(str + i + 1) + 1));
 	}
 
 	// missing showing active lines
@@ -720,4 +715,30 @@ void displaySub(Data *data, char *str, int offset) {
 	printf("info");
 	SEP2;
 	printf("%s\n", str);
+}
+
+GPtrArray *parseColors(char *name) {
+	GPtrArray *arr = g_ptr_array_new_full(3, free);
+	char str[BUFFER_SIZE];
+	snprintf(str, BUFFER_SIZE, "%s/%s", TABLE_PATH, name); // not .tb??
+	FILE *fp = fopen(str, "r");
+	char *res = NULL;
+	size_t size = 0;
+	while (getline(&res, &size, fp) != -1) {
+		g_ptr_array_add(arr, res);
+		res = NULL;
+		size = 0;
+	}
+	free(res); // wtf?????? why does getline use malloc on eof???
+	fclose(fp);
+	return arr;
+}
+
+// string does NOT come with home/...
+inline char *getColor(Data *data, int theme) {
+	return g_ptr_array_index(data->color_icons, theme);
+}
+
+inline int getNumberOfColors(Data *data) {
+	return (int)data->color_icons->len;
 }
