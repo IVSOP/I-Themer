@@ -29,15 +29,9 @@ struct Theme {
 
 typedef void outputFunc(void*data, FILE *fp);
 
-char *custom_strdup(char *src, int len);
 void freeTableStruct(void *data);
 void dumpDataObjArray(DataObjArray *, long int depth);
 void dumpTableEntry(gpointer key, gpointer value, gpointer user_data);
-void displaySub(Data *data, DataObjArray *dataobjarray, char * command);
-void displayVar(Data *data, DataObjArray *dataobjarray);
-void executeVar(Data *data, Theme *new_theme, DataObj *themeobj);
-void executeSub(Data *data, char *input);
-void parseThemes(DataObjArray *dataobjarray, Theme *new_theme, Theme *original_theme);
 void outInt(void*data, FILE *fp);
 void outString(void*data, FILE *fp);
 void outVersion(void*data, FILE *fp);
@@ -64,11 +58,6 @@ int readInt(char *str, int *len) {
 inline char get_last_char(char *str) {
 	while (*str != '\0') str++;
 	return *(str--);
-}
-
-char *custom_strdup(char *src, int len) {
-	char *dest = malloc(sizeof(char) * len);
-	return memcpy(dest, src, len);
 }
 
 // takes in string for (what is thinks) is the entire line and turns it into DataObjArray *, mallocing as needed
@@ -355,48 +344,6 @@ GHashTable *getTable(Data *data) {
 	return data->main_table;
 }
 
-void executeChange(Data *data, char * input) {
-	// DataObjArray *dataobjarray = tableLookup(data, input);
-	// if (dataobjarray != NULL) { // option got clicked (for first time)
-	// 	executeOnclick(data, dataobjarray);
-	// } else { // option got clicked inside of a display_var or display_sub
-	// 	char *endptr, *info = getenv("ROFI_INFO");
-	// 	Theme theme;
-	// 	theme.big = (int)strtol(info, &endptr, 10);
-	// 	if (*endptr != '.') {
-	// 		printf("Error in %s, expected x.y-option\n", __func__);
-	// 		exit(1);
-	// 	}
-	// 	theme.small = (int)strtol(endptr + 1, &info, 10);
-	// 	if (*info != '-') {
-	// 		printf("Error in %s, expected x.y-option\n", __func__);
-	// 		exit(1);
-	// 	}
-	// 	DataObjArray *dataobjarray = (DataObjArray *)g_hash_table_lookup(data->main_table, info + 1);
-	// 	DataObj *arr = dataobjarray->arr, *obj = &arr[2], *objtheme = &arr[1];
-	// 	Theme original_theme;
-	// 	if (objtheme->type == INT) {
-	// 		original_theme.big = (int)((long int) objtheme->info);
-	// 		original_theme.small = 0;
-	// 	} else { // no error checking
-	// 		original_theme = *(Theme *)objtheme->info;
-	// 	}
-	// 	if (original_theme.big == theme.big && original_theme.small == theme.small) {
-	// 		printf("Themes are the same\n");
-	// 		return;
-	// 	} else {
-	// 		// can either be show_sub or show_var
-	// 		char mode = ((char *)(obj->info))[5]; // no error checking
-	// 		if (mode == 'v') {
-	// 			executeVar(data, &theme, objtheme);
-	// 			displayVar(data, dataobjarray);
-	// 		} else { // no error checking
-	// 			printf("show sub\n");
-	// 		}
-	// 	}
-	// }
-}
-
 void freeDataObj(DataObj *data) {
 	freeFunc *freeDispatchTable[] = {freeNULL, free, free, freeNULL, freeTableStruct};
 	freeDispatchTable[data->type](data->info);
@@ -419,126 +366,6 @@ void printDataObj(DataObj *data) {
 		Theme *theme = (Theme *)data->info;
 		printf("%d.%d", theme->big, theme->small);
 	}
-}
-
-void parseThemes(DataObjArray *dataobjarray, Theme *new_theme, Theme *original_theme) {
-	DataObj *themeobj = &(dataobjarray->arr)[1];
-
-	char *endptr;
-	long int res = strtol(getenv("ROFI_INFO"), &endptr, 10);
-
-	new_theme->big = (int)res;
-	if (*endptr == '.') {
-		new_theme->small = atoi(endptr + 1);
-	} else {
-		new_theme->small = 0;
-	}
-	
-	if (themeobj->type == INT) {
-		original_theme->big = (int)((long int)themeobj->info);
-		original_theme->small = 0;
-	} else if (themeobj->type == INT_VERSION) {
-		*original_theme = *((Theme *)themeobj->info);
-	} else {
-		printf("Error in '%s'\n", __func__);
-	}
-}
-
-// this is an incomplete mess
-void displaySub(Data *data, DataObjArray *dataobjarray, char *command) {
-	DataObj *colorArr = ((DataObjArray *)g_hash_table_lookup(data->main_table, "color-icons"))->arr;
-	Data *dep = dataobjarray->dependency_table;
-	GHashTableIter iter;
-	char *key = NULL;
-	DataObjArray *current = NULL;
-	DataObj *arr;
-	Theme original_theme; //, new_theme; NOT NEEDED info is already "x.y"
-
-	char *home = getenv("HOME"), *info = getenv("ROFI_INFO");
-	int theme = atoi(info);
-	g_hash_table_iter_init (&iter, dep->main_table);
-	while (g_hash_table_iter_next (&iter, (void **)&key, (void **)&current))
-	{
-		arr = current->arr;
-		if ((&arr[1])->type == INT) {
-			original_theme.big = (int)((long int)((&arr[1])->info));
-			original_theme.small = 0;
-		} else {
-			original_theme = *((Theme *)(&arr[1])->info);
-		}
-		printf("%s", key);
-		SEP1;
-		printf("info"); //format: x.y-command, just like in background (change <command> to theme <x.y>)
-		SEP2;
-		printf("%d.0-%s", theme, command);
-		SEP2;
-		printf("icon");
-		SEP2;
-		printf("%s/%s\n", home, (char *)(&colorArr[original_theme.big + 1])->info);
-	}
-
-	// missing showing active lines
-	printf("Back");
-	SEP1;
-	printf("info");
-	SEP2;
-	printf("Theme %d\n", theme);
-}
-
-void displayVar(Data *data, DataObjArray *dataobjarray) {
-	Theme original_theme, new_theme;
-	parseThemes(dataobjarray, &new_theme, &original_theme);
-	char *home = getenv("HOME");
-	DataObjArray *list = (DataObjArray *)dataobjarray->arr[new_theme.big + 3].info;
-	DataObj *arr = list->arr, *current;
-	int i, len = list->len;
-
-	// i dont like this being hardcoded, but it was the simplest way
-	// background icons are not the color theme but the picture itself
-	if (strncmp("background", (char *)(dataobjarray->arr[0].info), 10) == 0) {
-		// 1 if true, 0 if false
-		for (i = 0; i < len; i++) {
-			current = &arr[i];
-			printDataObj(current);
-			SEP1;
-			printf("icon");
-			SEP2;
-			printf("%s/%s", home, (char *)current->info);
-			SEP2;
-			printf("info"); // format: x.y-background
-			SEP2;
-			printf("%d.%d-%s\n", new_theme.big, i + 1, "background"); // background hardcoded idc
-		}
-		// I tried using nonselectable, but didnt understand how it worked
-		// will leave it to the user to not repeat selections, but program will do them anyway (probably)
-		if (original_theme.big == new_theme.big) {
-			SEP1;
-			printf("active");
-			SEP2;
-			printf("%d\n", original_theme.small - 1);
-		}
-	} else {
-		printf("show_var for things other that background not complete\n"); exit(5);
-	}
-	printf("Back");
-	SEP1;
-	printf("info");
-	SEP2;
-	printf("Theme %d\n", new_theme.big);
-}
-
-void executeVar(Data *data, Theme *new_theme, DataObj *themeobj) {
-	// if (themeobj->type == INT) {
-	// 	Theme *new = malloc(sizeof(Theme));
-	// 	themeobj->info = memcpy(new, new_theme, sizeof(Theme));
-	// } else {
-	// 	themeobj->info = memcpy(themeobj->info, new_theme, sizeof(Theme));
-	// }
-	// saveTableToFile(data);
-}
-
-void executeSub(Data *data, char *input) {
-	// saveTableToFile(data);
 }
 
 void outList(void *data, FILE *fp) {
@@ -716,35 +543,35 @@ void changeTheme(DataObj *arr, int big, int small) {
 }
 
 // input format: .../<option>(0)
-// explanation: applying is allways relative to something that has happened before
-// nothing relevant happened: aplly directly
-// previous entry was sub: need to apply inside the table of the sub
-// previous entry was var: need to apply to it, and not to what is inside the var directly
-// NOTE: in case of the sub, to avoid large time looking up sub inside sub inside sub...,
-// it is assumed that the Data * that is passed is already the dependency data of the last sub
-
-// for now, it is only able of directly applying
-// applying with var is up to varHandler
-// applying with sub is exactly the same as direct application, but called with data = ...->dependency_table
+// applies and goes back to previous menu
+// applying is slightly different in case of lists, it is done by varHandler
+// in case of sub, the data being passed is already the subtable
 void applyHandler(Data *data, char *info, int offset) {
-	// checks if nothing relevant happened
 	int i;
-	for (i = 0; info[i] != '/'; i++);
-	if (i + 1 == offset) { // apply directly
-		for (i = offset; info[i] != '('; i++);
-		info[i] = '\0';
-		DataObjArray *dataobjarray = (DataObjArray *)g_hash_table_lookup(data->main_table, info + offset);
-		// info[i] = '(';
-		// info is theme<x>/...
-		int theme = atoi(info + 5);
-		changeTheme(dataobjarray->arr, theme, 0);
-		// back to previous menu
-		// info[i] is already \0
-		// cant just call input handler, too much of a mess
-		printThemeOptions(data, theme);
+	for (i = offset; info[i] != '('; i++);
+	// printf("%s\n%s\n%s\n", info, info + offset, info + i); exit(1);
+	info[i] = '\0';
+	DataObjArray *dataobjarray = (DataObjArray *)g_hash_table_lookup(data->main_table, info + offset);
+	// info[i] = '(';
+	// info is theme<x>/...
+	int theme = atoi(info + 5);
+	changeTheme(dataobjarray->arr, theme, 0);
+	// back to previous menu
+	info[i + offset - 1] = '\0';
+	// checks if nothing relevant happened
+	int j;
+	for (j = 0; info[j] != '/'; j++);
+	// can either be var or sub, never apply
+	// or it can be theme
+	if (j + 1 == offset) { // previous menu is just the menu of a theme
+		printThemeOptions(data, atoi(info + 5));
 	} else {
-		int previous_mode = (int)info[offset - 3] - 49;
-		printf("previous mode: %d %s %s\n", previous_mode, info, info + offset);
+		for (i = offset - 2; info[i] != '/'; i--);
+		if (info[offset - 3] == '1') { // sub
+			subHandler(data, info, i + 1);
+		} else { // var
+			varHandler(data, info, i + 1);
+		}
 	}
 }
 
@@ -753,7 +580,7 @@ void varHandler(Data *data, char *info, int offset) {
 	int i;
 	for (i = offset; info[i] != '\0' && info[i] != '/'; i++);
 	if (info[i] == '\0') { // ends here, nothing needs to be changed and options need to be displayed
-		displayVar2(data, info, offset);
+		displayVar(data, info, offset);
 	} else { // does not end here
 		// call apply handler??????????????????????????????????????'
 		char *endptr;
@@ -773,7 +600,7 @@ void varHandler(Data *data, char *info, int offset) {
 			theme->small = (int)res;
 			// go back to before click
 			info[i] = '\0';
-			displayVar2(data, info, offset);
+			displayVar(data, info, offset);
 		} else { // .../<option>(2)/<option>(<m>) need to keep displaying options
 			printf("Advanced recursion incomplete (%s)\n", __func__);
 			exit(1);
@@ -786,7 +613,7 @@ void subHandler(Data *data, char *info, int offset) {
 	int i;
 	for (i = offset; info[i] != '\0' && info[i] != '/'; i++);
 	if (info[i] == '\0') { // ends here, nothing needs to be changed and options need to be displayed
-		displaySub2(data, info, offset);
+		displaySub(data, info, offset);
 	} else { // .../<option>(1)/<option>(<m>) need to call apropriate function just like inputHandler would, but cant call it
 		int j;
 		for (j = offset; info[j] != '('; j++);
@@ -804,7 +631,7 @@ void subHandler(Data *data, char *info, int offset) {
 
 // input format: .../<option>(2)/...
 // output format: <original info>/<option number>
-void displayVar2(Data *data, char *str, int offset) {
+void displayVar(Data *data, char *str, int offset) {
 	int i;
 	for (i = offset; str[i] != '('; i++);
 	str[i] = '\0';
@@ -850,7 +677,7 @@ void displayVar2(Data *data, char *str, int offset) {
 	printf("%s\n", str);
 }
 
-void displaySub2(Data *data, char *str, int offset) {
+void displaySub(Data *data, char *str, int offset) {
 	int i;
 	for (i = offset; str[i] != '('; i++);
 	str[i] = '\0';

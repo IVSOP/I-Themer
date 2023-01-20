@@ -32,13 +32,12 @@ void varHandler(Data *data, char *info, int offset);
 void subHandler(Data *data, char *info, int offset);
 
 //displayers (same type as handlerFunc)
-void displayVar2(Data *data, char *str, int offset);
-void displaySub2(Data *data, char *str, int offset);
+void displayVar(Data *data, char *str, int offset);
+void displaySub(Data *data, char *str, int offset);
 
 void saveTableToFile(Data *data, char *name);
 
 char *readString(char *str, int *len);
-int readStringDelim(FILE *fp, char delim, char *buffer);
 Data *parseMainTable(FILE *);
 DataObjArray *parseLine(FILE *fp);
 void freeTableData(Data *data);
@@ -51,6 +50,5 @@ int getActivePerTheme(int theme);
 void *getValue(DataObj *data);
 GHashTable *getTable(Data *data);
 void generateThemeOptions(Data *data, int theme);
-void executeChange(Data *data, char * input);
 
 #endif
