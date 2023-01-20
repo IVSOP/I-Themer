@@ -99,9 +99,9 @@ int mainRofiLoop(char *input) {
 	// Data *data = getData(fp);
 	Data *data = parseMainTable(fp);
 
-	// inputHandler(data, input);
+	inputHandler(data, input);
 
-	dumpTable(data, 0);
+	// dumpTable(data, 0);
 	freeTableData(data);
 	fclose(fp);
 	return 0;

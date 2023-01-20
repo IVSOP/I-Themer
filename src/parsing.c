@@ -4,7 +4,7 @@
 #define SEP1 putchar('\0')
 #define SEP2 putchar('\x1f')
 
-#define TABLE_PATH "I-Themer/data/table.tb"
+#define TABLE_PATH "I-Themer/data"
 
 struct DataObj {
 	void *info;
@@ -45,7 +45,6 @@ void outString(void*data, FILE *fp);
 void outVersion(void*data, FILE *fp);
 void outEmpty(void*data, FILE *fp);
 void outList(void*data, FILE *fp);
-void outTable(Data *data, FILE *fp);
 
 char *readString(char *str, int *len) {
 	int i;
@@ -184,7 +183,7 @@ Data *parseMainTable(FILE *fp) {
 		char mode = ((char *)(&lineData->arr[2])->info)[5];
 		if (mode == 's') { // mode is sub, needs its dependencies resolved
 			char str[BUFFER_SIZE];
-			snprintf(str, BUFFER_SIZE, "I-Themer/data/%s.tb", (char *)(&lineData->arr[0])->info);
+			snprintf(str, BUFFER_SIZE, "%s/%s.tb", TABLE_PATH, (char *)(&lineData->arr[0])->info);
 			FILE *fp2 = fopen(str, "r");
 			lineData->dependency_table = parseMainTable(fp2);
 			fclose(fp2);
@@ -226,28 +225,6 @@ char *getDependencyString(char *str, FILE *fp) {
 	chr = fgetc(fp); // skip over '\n' after the ':'
 	return str;
 }
-
-// void parseDependecyTables(Data *data, FILE *fp) {
-// 	char *str = alloca(sizeof(char) * BUFFER_SIZE); // compiler didnt like the fact that it was array and not pointer
-// 	DataObjArray * lookup_res;
-// 	// this is done here so that subtables dont make one
-// 	// 10 was pulled out of my ass
-// 	data->dependency_array = g_ptr_array_new_full(10, NULL);
-// 	while ((str = getDependencyString(str, fp)) != NULL) {
-// 		lookup_res = g_hash_table_lookup(((const Data *) data)->main_table, str);
-// 		if (lookup_res == NULL) {
-// 			fprintf(stderr, "Sub-table found but no entry in main table corresponds to it. Found:'%s'\n", str);
-// 			exit(1);
-// 		} else {
-// 			lookup_res->dependency_table = parseMainTable(fp);
-// 			// add to the array that lists all the dependencies
-// 			g_ptr_array_add(((const Data *) data)->dependency_array, (char *)(lookup_res->arr[0].info));
-// 			// printf("dependency table for %s:\n", str);
-// 			// dumpTable(lookup_res->dependency_table);
-// 			// printf("%s dependency table ended\n", str);
-// 		}
-// 	}
-// }
 
 void freeNULL (void *data) {
 	return;
@@ -519,36 +496,36 @@ void parseThemes(DataObjArray *dataobjarray, Theme *new_theme, Theme *original_t
 }
 
 void executeApply(Data *data, DataObjArray *dataobjarray) {
-	Theme original_theme, new_theme;
-	parseThemes(dataobjarray, &new_theme, &original_theme);
-	DataObj *colorArr = ((DataObjArray *)g_hash_table_lookup(data->main_table, "color-icons"))->arr;
+	// Theme original_theme, new_theme;
+	// parseThemes(dataobjarray, &new_theme, &original_theme);
+	// DataObj *colorArr = ((DataObjArray *)g_hash_table_lookup(data->main_table, "color-icons"))->arr;
 
-	if (original_theme.big != new_theme.big || original_theme.small != new_theme.small) {
-		DataObj *themeObj = &dataobjarray->arr[1];
-		if (themeObj->type == INT) {
-			Theme *theme = malloc(sizeof(Theme));
-			themeObj->type = INT_VERSION;
-			themeObj->info = memcpy(theme, &new_theme, sizeof(Theme));
-		} else if (themeObj->type == INT_VERSION) {
-			themeObj->info = memcpy(themeObj->info, &new_theme, sizeof(Theme));
-		} else {
-			printf("Error in %s\n", __func__);
-			exit(1);
-		}
-	}
+	// if (original_theme.big != new_theme.big || original_theme.small != new_theme.small) {
+	// 	DataObj *themeObj = &dataobjarray->arr[1];
+	// 	if (themeObj->type == INT) {
+	// 		Theme *theme = malloc(sizeof(Theme));
+	// 		themeObj->type = INT_VERSION;
+	// 		themeObj->info = memcpy(theme, &new_theme, sizeof(Theme));
+	// 	} else if (themeObj->type == INT_VERSION) {
+	// 		themeObj->info = memcpy(themeObj->info, &new_theme, sizeof(Theme));
+	// 	} else {
+	// 		printf("Error in %s\n", __func__);
+	// 		exit(1);
+	// 	}
+	// }
 	
-	SEP1;
-	printf("prompt");
-	SEP2;
-	printf("Theme %d\nAll", new_theme.big);
-	SEP1;
-	printf("icon");
-	SEP2;
-	printf("%s/%s\n", getenv("HOME"), (char *)(&colorArr[new_theme.big + 1])->info);
-	generateThemeOptions(data, new_theme.big);
-	printf("Back\n");
+	// SEP1;
+	// printf("prompt");
+	// SEP2;
+	// printf("Theme %d\nAll", new_theme.big);
+	// SEP1;
+	// printf("icon");
+	// SEP2;
+	// printf("%s/%s\n", getenv("HOME"), (char *)(&colorArr[new_theme.big + 1])->info);
+	// generateThemeOptions(data, new_theme.big);
+	// printf("Back\n");
 
-	saveTableToFile(data);
+	// saveTableToFile(data);
 }
 
 // this is an incomplete mess
@@ -635,17 +612,17 @@ void displayVar(Data *data, DataObjArray *dataobjarray) {
 }
 
 void executeVar(Data *data, Theme *new_theme, DataObj *themeobj) {
-	if (themeobj->type == INT) {
-		Theme *new = malloc(sizeof(Theme));
-		themeobj->info = memcpy(new, new_theme, sizeof(Theme));
-	} else {
-		themeobj->info = memcpy(themeobj->info, new_theme, sizeof(Theme));
-	}
-	saveTableToFile(data);
+	// if (themeobj->type == INT) {
+	// 	Theme *new = malloc(sizeof(Theme));
+	// 	themeobj->info = memcpy(new, new_theme, sizeof(Theme));
+	// } else {
+	// 	themeobj->info = memcpy(themeobj->info, new_theme, sizeof(Theme));
+	// }
+	// saveTableToFile(data);
 }
 
 void executeSub(Data *data, char *input) {
-	saveTableToFile(data);
+	// saveTableToFile(data);
 }
 
 void outList(void *data, FILE *fp) {
@@ -673,9 +650,16 @@ void outLine(DataObjArray *dataobjarray, FILE *fp) {
 	}
 	outDispatchTable[(&arr[i])->type]((&arr[i])->info, fp);
 	fputc('\n', fp);
+	if (dataobjarray->dependency_table != NULL) {
+		saveTableToFile(dataobjarray->dependency_table, (char *)(&arr[0])->info);
+	}
 }
 
-void outTable(Data *data, FILE *fp) {
+void saveTableToFile(Data *data, char *name) {
+	char str[BUFFER_SIZE];
+	snprintf(str, BUFFER_SIZE, "%s/%s.tb", TABLE_PATH, name);
+	FILE *fp = fopen(str, "w");
+
 	GHashTableIter iter;
 	char *key = NULL;
 	DataObjArray *current = NULL;
@@ -685,32 +669,8 @@ void outTable(Data *data, FILE *fp) {
 	{
 		outLine(current, fp);
 	}
-}
 
-void saveTableToFile(Data *data) {
-	// FILE *fp = fopen(TABLE_PATH, "w");
-	// int res = fputs("This table was autogenerated as output\n", fp);
-	// if (res == EOF) {
-	// 	printf("Output file error in %s\n", __func__);
-	// 	exit(1);
-	// }
-	// // printing main table
-	// outTable(data, fp);
-
-	// // print all tables in the dependency
-	// // this is literally the only purpose of this array, maybe change this??
-	// GPtrArray *arr = data->dependency_array;
-	// DataObjArray *dataobjarray;
-	// char *str;
-	// int i, len = (int)arr->len;
-	// for (i = 0; i < len; i++) {
-	// 	str = (char *)g_ptr_array_index(arr, i);
-	// 	fputc('\n', fp);
-	// 	fputs(str, fp);
-	// 	fputs(":\n", fp);
-	// 	dataobjarray = (DataObjArray *)g_hash_table_lookup(data->main_table, str);
-	// 	outTable(dataobjarray->dependency_table, fp);
-	// }
+	fclose(fp);
 }
 
 void outInt(void *data, FILE *fp) {
@@ -866,6 +826,7 @@ void applyHandler(Data *data, char *info, int offset) {
 		int previous_mode = (int)info[offset - 3] - 49;
 		printf("previous mode: %d %s %s\n", previous_mode, info, info + offset);
 	}
+	saveTableToFile(data, "table");
 }
 
 // input format: .../<option>(2)/..., offset is first char after /
@@ -894,6 +855,7 @@ void varHandler(Data *data, char *info, int offset) {
 			// go back to before click
 			info[i] = '\0';
 			displayVar2(data, info, offset);
+			saveTableToFile(data, "table");
 		} else { // .../<option>(2)/<option>(<m>) need to keep displaying options
 			printf("Advanced recursion incomplete (%s)\n", __func__);
 			exit(1);

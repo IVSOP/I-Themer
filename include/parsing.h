@@ -34,7 +34,7 @@ void subHandler(Data *data, char *info, int offset);
 //displayers (same type as handlerFunc)
 void displayVar2(Data *data, char *str, int offset);
 
-void saveTableToFile(Data *data);
+void saveTableToFile(Data *data, char *name);
 
 char *readString(char *str, int *len);
 int readStringDelim(FILE *fp, char delim, char *buffer);
@@ -42,7 +42,6 @@ Data *parseMainTable(FILE *);
 DataObjArray *parseLine(FILE *fp);
 void freeTableData(Data *data);
 void dumpTable(Data *data, long int depth);
-void parseDependecyTables(Data *, FILE *);
 DataObjArray *tableLookup(Data *data, char *str);
 int getLen(DataObjArray *data);
 void printValue(DataObj *data);
