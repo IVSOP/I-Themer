@@ -549,27 +549,28 @@ void changeTheme(DataObj *arr, int big, int small) {
 void applyHandler(Data *data, char *info, int offset) {
 	int i;
 	for (i = offset; info[i] != '('; i++);
-	// printf("%s\n%s\n%s\n", info, info + offset, info + i); exit(1);
 	info[i] = '\0';
 	DataObjArray *dataobjarray = (DataObjArray *)g_hash_table_lookup(data->main_table, info + offset);
 	// info[i] = '(';
 	// info is theme<x>/...
 	int theme = atoi(info + 5);
 	changeTheme(dataobjarray->arr, theme, 0);
+
 	// back to previous menu
-	info[i + offset - 1] = '\0';
-	// checks if nothing relevant happened
 	int j;
+	// checks if nothing relevant happened
 	for (j = 0; info[j] != '/'; j++);
+	info[offset - 1] = '\0';
 	// can either be var or sub, never apply
 	// or it can be theme
 	if (j + 1 == offset) { // previous menu is just the menu of a theme
-		printThemeOptions(data, atoi(info + 5));
+		printThemeOptions(data, theme);
 	} else {
 		for (i = offset - 2; info[i] != '/'; i--);
 		if (info[offset - 3] == '1') { // sub
 			subHandler(data, info, i + 1);
 		} else { // var
+		printf("var\n");
 			varHandler(data, info, i + 1);
 		}
 	}
