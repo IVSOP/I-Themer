@@ -334,7 +334,7 @@ void generateThemeOptions(Data *data, int selected_theme) {
 		mode = ((char *)(&arr[2])->info)[5] / 59;
 		printf("%s", key);
 		if (mode == 1) { // sub
-			printf(" --> %d", current->dependency_table->active[selected_theme]);
+			printf(" --> %d/%d", current->dependency_table->active[selected_theme], getTableSize(current->dependency_table));
 		}
 		SEP1;
 		printf("info");
@@ -797,4 +797,8 @@ inline int getNumberOfColors(Data *data) {
 
 inline int getMostUsed(Data *data) {
 	return (data->active[data->color_icons->len]);
+}
+
+inline int getTableSize(Data *data) {
+	return g_hash_table_size(data->main_table);
 }

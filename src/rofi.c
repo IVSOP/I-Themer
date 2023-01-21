@@ -12,9 +12,10 @@
 void printMainOptions(Data *data) {
 	int i;
 	char * home = getenv("HOME");
-	int len = getNumberOfColors(data);
+	int len = getNumberOfColors(data),
+	total = getTableSize(data);
 	for (i = 0; i < len; i++) {
-		printf("Theme %d --> %d", i, getActivePerTheme(data, i));
+		printf("Theme %d --> %d/%d", i, getActivePerTheme(data, i), total);
 		SEP1;
 		printf("info");
 		SEP2;

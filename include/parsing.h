@@ -55,6 +55,7 @@ int getNumberOfColors(Data *data);
 int getActivePerTheme(Data *data, int theme);
 int getThemeBig(DataObj *themeobj);
 int getMostUsed(Data *data);
+int getTableSize(Data *data);
 
 //etc
 void generateThemeOptions(Data *data, int theme);
