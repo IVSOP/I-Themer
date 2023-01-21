@@ -46,9 +46,11 @@ void printThemeOptions(Data *data, int theme) {
 void inputHandler(Data *data, char *input) {
 	char * original_info = getenv("ROFI_INFO");
 	if (input != NULL && strncmp("query", input, 5) == 0) {
-		queryHandler(data, input + 6);
-	}
-	if (original_info == NULL) { // ""
+		char *input2 = alloca(sizeof(char) * INFO_SIZE);
+		strcpy(input2, input); // same explanation as bellow
+
+		queryHandler(data, input2);
+	} else if (original_info == NULL) { // ""
 		printMainOptions(data);
 	} else {
 		// when varHandler calls displayVar, what happens if string overflows????????

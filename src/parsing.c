@@ -464,84 +464,59 @@ void outEmpty(void *data, FILE *fp) {
 	return;
 }
 
-// format received: number-arg1-arg2-...
-// 0: lookup <name>-<subname> (subname only if it has sub tables)
-// 1: change to (not implemented) <theme>-<name>-<subname>
-void queryHandler(Data *data, char *query) {
-	printf("NOT WORKING\n"); exit(1);
-	char *endptr;
-	long int command = strtol(query, &endptr, 10);
-	endptr++;
-	if (command == 0) {
-		char *arg1 = endptr, *arg2;
-		for (arg2 = arg1; *arg2 != '\0' && *arg2 != '-'; arg2++);
-		if (*arg2 == '\0') { // subname not provided
-			arg2 = NULL;
+// receives info without "query0/" from the start
+void query0(Data *data, char *info) {
+	int i;
+	for (i = 0; info[i] != '\0' && info[i] != '/'; i++);
+	char tmp = info[i];
+	tmp = info[i];
+	info[i] = '\0';
+	DataObjArray *dataobjarray = (DataObjArray *)g_hash_table_lookup(data->main_table, info);
+	if (tmp == '\0') { // print data
+		// can only print strings and lists (of strings)
+
+		// case 0: is a string, and type is int -> print string
+		// case 1: is a string, and type is not int -> NOT POSSIBLE
+		// case 2: is a list, and type is int -> print entire list
+		// case 3: is a list, and type is not int -> print an element of the list
+		DataObj *arr = dataobjarray->arr,
+		*themeobj = &arr[1];
+		if (themeobj->type == INT_VERSION) {
+			// assumed to be list, and print a single element
+			Theme *theme = (Theme *)themeobj->info;
+			DataObjArray *list = (&arr[theme->big + 3])->info;
+			printf("%s\n", (char *)((&(list->arr[theme->small - 1]))->info));
+			// assumed to be list, and have to print all its elements
 		} else {
-			arg2[0] = '\0';
-			arg2++;
+			DataObj *current = &arr[(long int)themeobj->info + 3];
+			if (current->type == LIST) { // assumed list of strings
+				DataObjArray *list = (DataObjArray *)current->info;
+				for (i = 0; i < (const int)list->len; i++) {
+					current = &(list->arr[i]);
+					printf("%s\n", (char *)current->info);
+				}
+			} else { // assumed to be string
+				printf("%s\n", (char *)current->info);
+			}
 		}
-		DataObjArray *dataobjarray = (DataObjArray *)g_hash_table_lookup(data->main_table, arg1);
-		if (dataobjarray == NULL) {
-			printf("Name not found (arg1)\n");
-			exit(1);
-		}
-		DataObj *arr = dataobjarray->arr, *themeobj = &arr[1];
-		Theme theme;
-		if (themeobj->type == INT) {
-			theme.big = (int)((long int)themeobj->info);
-			theme.small = 0;
-		} else { // no error checking
-			theme = *(Theme *)themeobj->info;
-		}
-		char mode = ((char *)(&arr[2])->info)[5]; // will be apply(\0), show_var(v) or show_sub(s)
-		// switch???
-		if (mode == '\0') {	
-			if (theme.small != 0) {
-				printf("Internal error, theme is x.y but mode is apply (theme should be x.0)\n");
-				exit(1);
-			}
-			printf("%s\n", (char *)(&arr[theme.big + 3])->info);
-		} else if (mode == 'v') {
-			DataObj *listobj = &arr[theme.big + 3];
-			if (listobj->type != LIST) {
-				printf("Internal error, theme is x.y but there is no list on [x]\n");
-				exit(1);
-			}
-			if (theme.small == 0) {
-				printf("Internal error, theme not in the form x.y\n");
-				exit(1);
-			}
-			DataObj *list = &(((DataObjArray *)listobj->info)->arr)[theme.small - 1];
-			printf("%s\n", (char *)(list->info));
-		} else if (mode == 's') {
-			DataObjArray *target_dep = (DataObjArray *)g_hash_table_lookup(dataobjarray->dependency_table->main_table, arg2);
-			if (target_dep == NULL) {
-				printf("Name not found (arg2)\n");
-				exit(1);
-			}
-			// for now it is assumed that it is an "apply" thing,
-			// in the future change this funtion into several other functions
-			// so that you just have to call it for this particular DataObjArray
-			// this is really very bad please change
-			
-			// theme , themeobj and arr are reused
-			arr = target_dep->arr;
-			themeobj = &arr[1];
-			if (themeobj->type == INT) {
-				theme.big = (int)((long int)themeobj->info);
-				theme.small = 0;
-			} else { // no error checking
-				theme = *(Theme *)themeobj->info;
-			}
-			DataObj *current = &arr[theme.big + 3];
-			printf("%s\n", (char *)(current->info));
-			
-		}
-	} else {
-		printf("Query not implemented\n");
+
+	} else { // have to go into subadata
+		query0(dataobjarray->dependency_table, info + i + 1);
+	}
+}
+
+// format received: query<number>/<arg1>/<arg2>/...
+// 0: lookup <name>/<subname> (subname only if it has sub tables)
+// 1: change to (not implemented) <theme>/<name>/<subname>
+void queryHandler(Data *data, char *info) {
+	char *endptr;
+	int query = (int)strtol(info + 5, &endptr, 10);
+	if (query != 0) {
+		printf("Only query 0 has been completed\n");
 		exit(1);
 	}
+	// no error checking, responsibility of user?
+	query0(data, endptr + 1); // skip numbers and '/'
 }
 
 void changeTheme(DataObj *arr, int big, int small) {
@@ -693,19 +668,35 @@ void displayVar(Data *data, char *str, int offset) {
 
 	// I assume that if type is show_var then the theme must be version and not int
 	// I also assume all elements in list are strings
-
 	char *home = getenv("HOME");
-	for (i = 0; i < len; i++) {
-		current = &arr[i];
-		printDataObj(current);
-		SEP1;
-		printf("icon");
-		SEP2;
-		printf("%s/%s", home, (char *)current->info);
-		SEP2;
-		printf("info");
-		SEP2;
-		printf("%s/%d\n", str, i + 1);
+
+	// kind of a bad solution, but background images are show as what the info itself says
+	if (strncmp((char *)(&dataobjarray->arr[0])->info, "background", 10) == 0) {
+		for (i = 0; i < len; i++) {
+			current = &arr[i];
+			printDataObj(current);
+			SEP1;
+			printf("icon");
+			SEP2;
+			printf("%s/%s", home, (char *)current->info);
+			SEP2;
+			printf("info");
+			SEP2;
+			printf("%s/%d\n", str, i + 1);
+		}
+	} else { // UNTESTED
+		for (i = 0; i < len; i++) {
+			current = &arr[i];
+			printDataObj(current);
+			SEP1;
+			printf("icon");
+			SEP2;
+			printf("%s/%s", home, getColor(data, original_theme->big));
+			SEP2;
+			printf("info");
+			SEP2;
+			printf("%s/%d\n", str, i + 1);
+		}
 	}
 	if (theme == original_theme->big) {
 		SEP1;
