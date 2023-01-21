@@ -707,16 +707,17 @@ void displaySub(Data *data, char *str, int offset) {
 	DataObj *arr;
 
 	// output format: .../<option>(1)/<option>(<m>)
-	int theme;
+	int theme, active[g_hash_table_size(data->main_table)], original_theme = atoi(str + 5);
 	char mode, *home = getenv("HOME"), *infostr;
 	g_hash_table_iter_init (&iter, dep->main_table);
-	while (g_hash_table_iter_next (&iter, (void **)&key, (void **)&current))
+	for (i = 0; g_hash_table_iter_next (&iter, (void **)&key, (void **)&current); i++)
 	{
 		arr = current->arr;
 		mode = ((char *)((&arr[2])->info))[5];
 		infostr = (char *)((&arr[0])->info);
 		// assume it can only be int or int_version
 		theme =	(&arr[1])->type == INT ? (int)((long int)((&arr[1])->info)) : ((Theme *)((&arr[1])->info))->big;
+		active[i] = theme == original_theme ? 1 : 0;
 		printf("%s", infostr);
 		SEP1;
 		printf("info");
@@ -728,9 +729,18 @@ void displaySub(Data *data, char *str, int offset) {
 		printf("%s/%s\n", home, getColor(data, theme));
 	}
 
-	// missing showing active lines
+	SEP1;
+	printf("active");
+	SEP2;
+	int j = i;
+	for (i = 0; i < j; i++) {
+		if (active[i] == 1) {
+			printf("%d,", i);
+		}
+	}
+	
 	str[offset - 1] = '\0';
-	printf("Back(%s)", str);
+	printf("\nBack");
 	SEP1;
 	printf("info");
 	SEP2;
