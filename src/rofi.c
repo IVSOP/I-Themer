@@ -14,7 +14,7 @@ void printMainOptions(Data *data) {
 	char * home = getenv("HOME");
 	int len = getNumberOfColors(data);
 	for (i = 0; i < len; i++) {
-		printf("Theme %d --> %d", i, getActivePerTheme(i));
+		printf("Theme %d --> %d", i, getActivePerTheme(data, i));
 		SEP1;
 		printf("info");
 		SEP2;
@@ -24,6 +24,10 @@ void printMainOptions(Data *data) {
 		SEP2;
 		printf("%s/%s\n", home, getColor(data, i));
 	}
+	SEP1;
+	printf("active");
+	SEP2;
+	printf("%d\n", getMostUsed(data));
 }
 
 void printThemeOptions(Data *data, int theme) {

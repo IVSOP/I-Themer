@@ -47,12 +47,14 @@ GPtrArray *parseColors(char *name);
 //getters
 GHashTable *getTable(Data *data);
 void *getValue(DataObj *data);
-int getActivePerTheme(int theme);
 DataObj *getDataObj(DataObjArray *data, int i);
 int getLen(DataObjArray *data);
 DataObjArray *tableLookup(Data *data, char *str);
 char *getColor(Data *data, int theme);
 int getNumberOfColors(Data *data);
+int getActivePerTheme(Data *data, int theme);
+int getThemeBig(DataObj *themeobj);
+int getMostUsed(Data *data);
 
 //etc
 void generateThemeOptions(Data *data, int theme);

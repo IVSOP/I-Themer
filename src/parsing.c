@@ -14,6 +14,7 @@ struct DataObj {
 struct Data {
 	GHashTable *main_table;
 	GPtrArray *color_icons;
+	int *active;
 };
 
 //contains data from an entire line
@@ -145,40 +146,60 @@ DataObjArray *parseLine(FILE *fp) {
 	buffsiz = buffsiz;
 }
 
+// THIS IS SKETCHY!!!!
+inline int getThemeBig(DataObj *themeobj) {
+	return (themeobj->type == INT ? (int)((long int)themeobj->info) : *(int *)themeobj->info);
+}
+
 // returns NULL on EOF
 Data *parseMainTable(FILE *fp, GPtrArray *colorArr) {
 	Data *data = malloc(sizeof(Data));
+	int *active = calloc((colorArr->len + 1), sizeof(int));
+	data->active = active;
 
 	// key destroy func is NULL since they will be freed when the remaining data is freed (they are shared)
 	GHashTable * table = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, freeTableStruct);
 	DataObjArray *lineData = parseLine(fp);
 	DataObj *tmp;
-	int max_len = 0;
+	int current_theme, biggest;
 	while (lineData != NULL) {
 		char mode = ((char *)(&lineData->arr[2])->info)[5];
+		current_theme = getThemeBig(&lineData->arr[1]);
 		if (mode == 's') { // mode is sub, needs its dependencies resolved
 			char str[BUFFER_SIZE];
 			snprintf(str, BUFFER_SIZE, "%s/%s.tb", TABLE_PATH, (char *)(&lineData->arr[0])->info);
 			FILE *fp2 = fopen(str, "r");
 			lineData->dependency_table = parseMainTable(fp2, colorArr);
 			fclose(fp2);
+			// need to update current selected theme, based on the most used theme
+			// is sub, so can be sure it is an INT and not INT_VERSION
+			if ((biggest = lineData->dependency_table->active[(const int)colorArr->len]) == current_theme) {
+				// if the most used is the same as current, no need to update it
+				active[current_theme] += 1;
+			} else {
+				// else have to change it and active[other theme] += 1
+				(&lineData->arr[1])->info = (void *)((long int)biggest);
+				active[biggest] += 1;
+			}
+			
+		} else {
+			active[current_theme] += 1;
+			// printf("adding theme %d to %s\n", getThemeBig(&lineData->arr[1]), ((char *)(&lineData->arr[0])->info));
 		}
 		tmp = &(lineData->arr)[0];
-		if (tmp->type != STRING) {
-			fprintf(stderr, "For now the hash table is designed to use strings in the hashing function, please start all lines with a string\nError thrown in parsing.c:parseMainTable\n");
-			exit(1);
+		// if (tmp->type != STRING) {
+		// 	fprintf(stderr, "For now the hash table is designed to use strings in the hashing function, please start all lines with a string\nError thrown in %s\n", __func__);
+		// 	exit(1);
+		// }
+		for (current_theme = biggest = 0; current_theme < (const int)colorArr->len; current_theme++) {
+			if (active[current_theme] > biggest) biggest = current_theme;
 		}
-		if (max_len < lineData->len) max_len = lineData->len;
+		active[current_theme] = biggest;
+
 		g_hash_table_insert(table, tmp->info, lineData);
 		lineData = parseLine(fp);
 	}
 
-	if (max_len == 0) { // EOF
-
-		free(data);
-		g_hash_table_destroy(table);
-		return NULL;
-	}
 	data->main_table = table;
 	data->color_icons = colorArr;
 	return data;
@@ -208,6 +229,7 @@ void freeTableStruct(void *data) {
 void freeTableData(Data *data) {
 	if (data != NULL) {
 		g_hash_table_destroy(data->main_table);
+		free(data->active);
 		free(data);
 	}
 }
@@ -254,6 +276,13 @@ void dumpTableEntry(gpointer key, gpointer value, gpointer user_data) {
 }
 
 void dumpTable(Data *data, long int depth) {
+	printSpace(depth);
+	printf("active = [");
+	int i;
+	for (i = 0; i < (const int)data->color_icons->len; i++) {
+		printf("%d, ", data->active[i]);
+	}
+	printf("%d]\n", data->active[i]);
 	g_hash_table_foreach(data->main_table, dumpTableEntry, (void *)depth);
 }
 
@@ -280,9 +309,8 @@ DataObj *getDataObj(DataObjArray *data, int i) {
 	return &(data->arr)[i];
 }
 
-// TODO
-int getActivePerTheme(int theme) {
-	return -1;
+inline int getActivePerTheme(Data *data, int theme) {
+	return (data->active)[theme];
 }
 
 void *getValue(DataObj *data) {
@@ -305,6 +333,9 @@ void generateThemeOptions(Data *data, int selected_theme) {
 		arr = current->arr;
 		mode = ((char *)(&arr[2])->info)[5] / 59;
 		printf("%s", key);
+		if (mode == 1) { // sub
+			printf(" --> %d", current->dependency_table->active[selected_theme]);
+		}
 		SEP1;
 		printf("info");
 		SEP2;
@@ -771,4 +802,8 @@ inline char *getColor(Data *data, int theme) {
 
 inline int getNumberOfColors(Data *data) {
 	return (int)data->color_icons->len;
+}
+
+inline int getMostUsed(Data *data) {
+	return (data->active[data->color_icons->len]);
 }
