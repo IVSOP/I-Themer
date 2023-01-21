@@ -72,6 +72,13 @@ int mainRofiLoop(char *input) {
 
 	Data *data = parseMainTable(fp, colorArr);
 
+	// char *info = getenv("ROFI_INFO");
+	// if (info) {
+	// 	printf("%s\n", info);
+	// } else printf("null\n");
+	// fflush(stdout);
+	setenv("ROFI_INFO", "theme0/polybar(1)/bar(0)", 1);
+	// theme0/polybar(1)/bar(0)
 	inputHandler(data, input);
 
 	// dumpTable(data, 0);

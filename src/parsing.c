@@ -563,9 +563,9 @@ void applyHandler(Data *data, char *info, int offset) {
 	} else {
 		for (i = offset - 2; info[i] != '/'; i--);
 		if (info[offset - 3] == '1') { // sub
-			// this was crashing because color-info can only be lookep up in the main file
-			// to fix it, I will make it so any Data * has access to it
-			subHandler(data, info, i + 1);
+			// crashing because it needs to go back to a data * that no longer exists. need to apply in sub.
+			// subHandler(data, info, i + 1);
+			// for now, this will do nothing, since the apply of the new theme is correct but the display of previous data isn't
 		} else { // var
 			varHandler(data, info, i + 1);
 		}
@@ -621,8 +621,25 @@ void subHandler(Data *data, char *info, int offset) {
 		info[i] = '/';
 		// inputHandler(dataobjarray->dependency_table, info + i + 1);
 		for (j = i + 1; info[j] != '('; j++);
-		handlerFunc *handlers[] = {applyHandler, subHandler, varHandler};
-		handlers[(int)(info[j + 1] - 48)](dataobjarray->dependency_table, info, i + 1);
+		// see error in apply handler for explanation as to why this doesnt work
+		// handlerFunc *handlers[] = {applyHandler, subHandler, varHandler};
+		// handlers[(int)(info[j + 1] - 48)](dataobjarray->dependency_table, info, i + 1);
+		switch ((int)(info[j + 1] - 48))
+		{
+		case 0: // apply
+			applyHandler(dataobjarray->dependency_table, info, i + 1); // I assume some magic happens here and a \0 is perfectly placed to allow to pass info + i + 1 next
+			// magic is correct but offset is not
+			// ineficient but idc
+			for (i -= 1; info[i] != '/'; i--);
+			displaySub(data, info, i + 1);
+			break;
+		case 1: // sub
+			subHandler(dataobjarray->dependency_table, info, i + 1);
+			break;
+		case 2: // var
+			varHandler(dataobjarray->dependency_table, info, i + 1);
+			break;
+		}
 	}
 }
 
