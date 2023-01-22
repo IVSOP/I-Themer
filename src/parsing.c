@@ -191,8 +191,10 @@ Data *parseMainTable(FILE *fp, GPtrArray *colorArr) {
 		// 	fprintf(stderr, "For now the hash table is designed to use strings in the hashing function, please start all lines with a string\nError thrown in %s\n", __func__);
 		// 	exit(1);
 		// }
-		for (current_theme = biggest = 0; current_theme < (const int)colorArr->len; current_theme++) {
-			if (active[current_theme] > biggest) biggest = current_theme;
+		
+		// 0 will be checked anyway, just start at 1
+		for (current_theme = 1, biggest = 0; current_theme < (const int)colorArr->len; current_theme++) {
+			if (active[current_theme] > active[biggest]) biggest = current_theme;
 		}
 		active[current_theme] = biggest;
 
