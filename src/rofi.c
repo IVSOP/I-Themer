@@ -35,11 +35,7 @@ void printThemeOptions(Data *data, int theme) {
 	SEP1;
 	printf("prompt");
 	SEP2;
-	printf("Theme %d\nAll", theme);
-	SEP1;
-	printf("icon");
-	SEP2;
-	printf("%s/%s\n", getenv("HOME"), getColor(data, theme));
+	printf("Theme %d\n", theme);
 
 	generateThemeOptions(data, theme);
 }
@@ -66,7 +62,7 @@ void inputHandler(Data *data, char *input) {
 		} else { // "theme<x>/option(<m>)/..." m can be 0(apply), 1(show_sub) or 2(show_var) 0=0  1=115 2=118 so just /59
 			int j;
 			for (j = i + 1; info[j] != '('; j++);
-			handlerFunc *handlers[] = {applyHandler, subHandler, varHandler};
+			handlerFunc *handlers[] = {applyHandler, subHandler, varHandler, allHandler};
 			handlers[(int)(info[j + 1] - 48)](data, info, i + 1);
 		}
 	}

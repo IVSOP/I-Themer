@@ -330,6 +330,16 @@ void generateThemeOptions(Data *data, int selected_theme) {
 	int mode;
 	char *home = getenv("HOME");
 
+	printf("All");
+	SEP1;
+	printf("info");
+	SEP2;
+	printf("theme%d/All(3)", selected_theme);
+	SEP2;
+	printf("icon");
+	SEP2;
+	printf("%s/%s\n", home, getColor(data, selected_theme));
+
 	g_hash_table_iter_init (&iter, data->main_table);
 	for (i = 0; g_hash_table_iter_next (&iter, (void **)&key, (void **)&current); i++) {
 		arr = current->arr;
@@ -495,7 +505,7 @@ void query0(Data *data, char *info) {
 				DataObjArray *list = (DataObjArray *)current->info;
 				for (i = 0; i < (const int)list->len; i++) {
 					current = &(list->arr[i]);
-					printf("%s\n", (char *)current->info);
+					printf("%s ", (char *)current->info);
 				}
 			} else { // assumed to be string
 				printf("%s\n", (char *)current->info);
@@ -647,6 +657,9 @@ void subHandler(Data *data, char *info, int offset) {
 		case 2: // var
 			varHandler(dataobjarray->dependency_table, info, i + 1);
 			break;
+		case 3:
+			allHandler(dataobjarray->dependency_table, info, i + 1);
+			break;
 		}
 	}
 }
@@ -731,9 +744,20 @@ void displaySub(Data *data, char *str, int offset) {
 	DataObj *arr;
 
 	// output format: .../<option>(1)/<option>(<m>)
-	int theme, active[g_hash_table_size(data->main_table)], original_theme = atoi(str + 5);
+	int theme, active[g_hash_table_size(dep->main_table)], original_theme = atoi(str + 5);
 	char mode, *home = getenv("HOME"), *infostr;
 	g_hash_table_iter_init (&iter, dep->main_table);
+
+	printf("All");
+	SEP1;
+	printf("info");
+	SEP2;
+	printf("%s/All(3)", str);
+	SEP2;
+	printf("icon");
+	SEP2;
+	printf("%s/%s\n", home, getColor(data, original_theme));
+
 	for (i = 0; g_hash_table_iter_next (&iter, (void **)&key, (void **)&current); i++)
 	{
 		arr = current->arr;
@@ -759,7 +783,7 @@ void displaySub(Data *data, char *str, int offset) {
 	int j = i;
 	for (i = 0; i < j; i++) {
 		if (active[i] == 1) {
-			printf("%d,", i);
+			printf("%d,", i + 1);
 		}
 	}
 	
@@ -803,4 +827,110 @@ inline int getMostUsed(Data *data) {
 
 inline int getTableSize(Data *data) {
 	return g_hash_table_size(data->main_table);
+}
+
+// change to jump table??
+void applyAll(Data *data, int theme) {
+	GHashTableIter iter;
+	char *key = NULL;
+	DataObjArray *current = NULL;
+	char mode;
+	DataObj *tmp;
+
+	g_hash_table_iter_init (&iter, data->main_table);
+	while (g_hash_table_iter_next (&iter, (void **)&key, (void **)&current))
+	{
+		tmp = &(current->arr[2]);
+		mode = ((char *)tmp->info)[5];
+		switch (mode) {
+			case '\0': // apply
+				changeTheme(current->arr, theme, 0);
+				break;
+			case 'v': // var
+				changeTheme(current->arr, theme, 1);
+				break;
+			case 's': // sub
+				changeTheme(current->arr, theme, 0);
+				applyAll(current->dependency_table, theme);
+				break;
+		}
+	}
+}
+
+// applies all options in a given table to a given theme, recursively
+// in case of array: applies first option
+void allHandler(Data *data, char *info, int offset) {
+	int theme = atoi(info + 5), i;
+	applyAll(data, theme);
+
+	for (i = 0; info[i] != '/'; i++);
+	if (offset == i + 1) {
+		generateThemeOptions(data, theme);
+	} else {
+		info[offset - 1] = '\0';
+		// displaySub(data, info, i + 1); this is bad because data is already the dependency table of something
+		// either: copy paste display sub but without using dependency table
+		// or: trace the entire path back to the menu it is supposed to be in -> bad because original table was lost, would have to parse again
+		displaySubWithoutDep(data, info, i + 1);
+	}
+}
+
+// it is assumed data is already the dependency data
+// maybe use this more oftern and avoid an extra lookup??????
+void displaySubWithoutDep(Data *data, char *str, int offset) {
+	GHashTableIter iter;
+	char *key = NULL;
+	DataObjArray *current = NULL;
+	DataObj *arr;
+
+	// output format: .../<option>(1)/<option>(<m>)
+	int theme, active[g_hash_table_size(data->main_table)], original_theme = atoi(str + 5), i;
+	char mode, *home = getenv("HOME"), *infostr;
+	g_hash_table_iter_init (&iter, data->main_table);
+
+	printf("All");
+	SEP1;
+	printf("info");
+	SEP2;
+	printf("%s/All(3)", str);
+	SEP2;
+	printf("icon");
+	SEP2;
+	printf("%s/%s\n", home, getColor(data, original_theme));
+
+	for (i = 0; g_hash_table_iter_next (&iter, (void **)&key, (void **)&current); i++)
+	{
+		arr = current->arr;
+		mode = ((char *)((&arr[2])->info))[5];
+		infostr = (char *)((&arr[0])->info);
+		// assume it can only be int or int_version
+		theme =	(&arr[1])->type == INT ? (int)((long int)((&arr[1])->info)) : ((Theme *)((&arr[1])->info))->big;
+		active[i] = theme == original_theme ? 1 : 0;
+		printf("%s", infostr);
+		SEP1;
+		printf("info");
+		SEP2;
+		printf("%s/%s(%d)", str, infostr, mode);
+		SEP2;
+		printf("icon");
+		SEP2;
+		printf("%s/%s\n", home, getColor(data, theme));
+	}
+
+	SEP1;
+	printf("active");
+	SEP2;
+	int j = i;
+	for (i = 0; i < j; i++) {
+		if (active[i] == 1) {
+			printf("%d,", i + 1);
+		}
+	}
+	
+	str[offset - 1] = '\0';
+	printf("\nBack");
+	SEP1;
+	printf("info");
+	SEP2;
+	printf("%s\n", str);
 }

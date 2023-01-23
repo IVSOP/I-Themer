@@ -30,10 +30,12 @@ void queryHandler(Data *data, char *query);
 void applyHandler(Data *data, char *info, int offset);
 void varHandler(Data *data, char *info, int offset);
 void subHandler(Data *data, char *info, int offset);
+void allHandler(Data *data, char *info, int offset);
 
 //displayers (same type as handlerFunc)
 void displayVar(Data *data, char *str, int offset);
 void displaySub(Data *data, char *str, int offset);
+void displaySubWithoutDep(Data *data, char *str, int offset);
 
 void saveTableToFile(Data *data, char *name);
 
