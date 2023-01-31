@@ -39,6 +39,13 @@ void displaySubWithoutDep(Data *data, char *str, int offset);
 
 void saveTableToFile(Data *data, char *name);
 
+#define CHECK_FILE_ERROR(fp) {\
+	if (fp == NULL) {\
+		fprintf(stderr, "Error opening file, exiting\n");\
+		exit(1);\
+	}\
+}
+
 
 //parsing
 Data *parseMainTable(FILE *fp, GPtrArray *colorArr);

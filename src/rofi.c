@@ -70,6 +70,7 @@ void inputHandler(Data *data, char *input) {
 
 int mainRofiLoop(char *input) {
 	FILE *fp = fopen(TABLE_PATH, "r");
+	CHECK_FILE_ERROR(fp);
 
 	GPtrArray *colorArr = parseColors("color-icons");
 

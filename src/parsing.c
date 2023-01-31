@@ -169,6 +169,7 @@ Data *parseMainTable(FILE *fp, GPtrArray *colorArr) {
 			char str[BUFFER_SIZE];
 			snprintf(str, BUFFER_SIZE, "%s/%s.tb", TABLE_PATH, (char *)(&lineData->arr[0])->info);
 			FILE *fp2 = fopen(str, "r");
+			CHECK_FILE_ERROR(fp2)
 			lineData->dependency_table = parseMainTable(fp2, colorArr);
 			fclose(fp2);
 			// need to update current selected theme, based on the most used theme
@@ -365,6 +366,12 @@ void generateThemeOptions(Data *data, int selected_theme) {
 
 		active[i] = theme == selected_theme ? 1 : 0;
 	}
+
+	if (i == 0) {
+		// No info, will go straight to main menu
+		printf("No options available\n");
+	}
+
 	SEP1;
 	printf("active");
 	SEP2;
@@ -440,6 +447,7 @@ void saveTableToFile(Data *data, char *name) {
 	char str[BUFFER_SIZE];
 	snprintf(str, BUFFER_SIZE, "%s/%s.tb", TABLE_PATH, name);
 	FILE *fp = fopen(str, "w");
+	CHECK_FILE_ERROR(fp);
 
 	GHashTableIter iter;
 	char *key = NULL;
@@ -532,7 +540,11 @@ void queryHandler(Data *data, char *info) {
 }
 
 void changeTheme(DataObj *arr, int big, int small) {
-	DataObj *themeobj = &arr[1];
+	DataObj *themeobj = &arr[1],
+	*infoObj = &arr[big + 3];
+
+	if (infoObj->info == NULL) return; // if it is empty (or info == NULL) then do nothing
+
 	if (themeobj->type == INT) {
 		if (small == 0) {
 			themeobj->info = (void *)((long int)big);
@@ -675,9 +687,19 @@ void displayVar(Data *data, char *str, int offset) {
 	int theme = atoi(str + 5);
 	
 	// NOTE: For now, it is assumed that show_var is used with lists, whose items should be applied
-	// no error checking is performed
+	// no error checking is performed besides empty list
 	Theme *original_theme = (Theme *)((&(dataobjarray->arr[1]))->info);
 	DataObjArray *list = (DataObjArray *)((&dataobjarray->arr[theme + 3])->info);
+	// check for empty can either be type == EMPTY or info == NULL
+	if (list == NULL) {
+		printf("List is empty");
+		SEP1;
+		printf("info");
+		SEP2;
+		str[offset - 1] = '\0';
+		printf("%s\n", str); //same as pressing "Back"
+		return;
+	}
 	DataObj *arr = list->arr, *current;
 	int len = list->len;
 
@@ -777,6 +799,16 @@ void displaySub(Data *data, char *str, int offset) {
 		printf("%s/%s\n", home, getColor(data, theme));
 	}
 
+	if (i == 0) { // maybe check before so the option "All" doesn't show up?
+		str[offset - 1] = '\0';
+		printf("No results");
+		SEP1;
+		printf("info");
+		SEP2;
+		printf("%s\n", str);
+		return;
+	}
+
 	SEP1;
 	printf("active");
 	SEP2;
@@ -800,6 +832,7 @@ GPtrArray *parseColors(char *name) {
 	char str[BUFFER_SIZE];
 	snprintf(str, BUFFER_SIZE, "%s/%s", TABLE_PATH, name); // not .tb??
 	FILE *fp = fopen(str, "r");
+	CHECK_FILE_ERROR(fp);
 	char *res = NULL;
 	size_t size = 0;
 	while (getline(&res, &size, fp) != -1) {
@@ -876,7 +909,7 @@ void allHandler(Data *data, char *info, int offset) {
 }
 
 // it is assumed data is already the dependency data
-// maybe use this more oftern and avoid an extra lookup??????
+// maybe use this more often and avoid an extra lookup??????
 void displaySubWithoutDep(Data *data, char *str, int offset) {
 	GHashTableIter iter;
 	char *key = NULL;
