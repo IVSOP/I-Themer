@@ -16,26 +16,37 @@ typedef enum {
 	LIST = 4, // stored as DataObjArray *, not as Data *
 } TYPE;
 
+#define SEP1 putchar('\0')
+#define SEP2 putchar('\x1f')
 
 typedef struct DataObj DataObj;
 typedef struct Data Data;
 typedef struct DataObjArray DataObjArray;
 typedef struct Theme Theme;
 
+struct DataObj {
+	void *info;
+	TYPE type;
+};
+
+struct Data {
+	GHashTable *main_table;
+	GPtrArray *color_icons;
+	int *active;
+};
+
+//contains data from an entire line
+struct DataObjArray {
+	DataObj *arr;
+	int len; // number of fiels so I know how many to free
+	Data * dependency_table;
+};
+
+struct Theme {
+	int big, small;
+};
+
 typedef void freeFunc(void *);
-
-//handlers
-typedef void handlerFunc(Data *, char *, int);
-void queryHandler(Data *data, char *query);
-void applyHandler(Data *data, char *info, int offset);
-void varHandler(Data *data, char *info, int offset);
-void subHandler(Data *data, char *info, int offset);
-void allHandler(Data *data, char *info, int offset);
-
-//displayers (same type as handlerFunc)
-void displayVar(Data *data, char *str, int offset);
-void displaySub(Data *data, char *str, int offset);
-void displaySubWithoutDep(Data *data, char *str, int offset);
 
 void saveTableToFile(Data *data, char *name);
 
@@ -45,7 +56,6 @@ void saveTableToFile(Data *data, char *name);
 		exit(1);\
 	}\
 }
-
 
 //parsing
 Data *parseMainTable(FILE *fp, GPtrArray *colorArr);
@@ -66,12 +76,7 @@ int getThemeBig(DataObj *themeobj);
 int getMostUsed(Data *data);
 int getTableSize(Data *data);
 
-//etc
-void generateThemeOptions(Data *data, int theme);
-void printValue(DataObj *data);
-
-//debug
-void dumpTable(Data *data, long int depth);
+void changeTheme(DataObj *arr, int big, int small);
 
 //freeing
 void freeTableData(Data *data);

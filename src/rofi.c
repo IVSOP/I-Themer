@@ -1,44 +1,13 @@
 #include "rofi.h"
+#include "display.h"
 #include <unistd.h>
 #include <string.h>
+#include "handlers.h"
 
-#define SEP1 putchar('\0')
-#define SEP2 putchar('\x1f')
 #define TABLE_PATH "I-Themer/data/table.tb"
 #define INFO_SIZE 512
 
 // SEE HOW POWERMENU SCRIPT HANDLES ICONS
-
-void printMainOptions(Data *data) {
-	int i;
-	char * home = getenv("HOME");
-	int len = getNumberOfColors(data),
-	total = getTableSize(data);
-	for (i = 0; i < len; i++) {
-		printf("Theme %d --> %d/%d", i, getActivePerTheme(data, i), total);
-		SEP1;
-		printf("info");
-		SEP2;
-		printf("theme%d", i);
-		SEP2;
-		printf("icon");
-		SEP2;
-		printf("%s/%s\n", home, getColor(data, i));
-	}
-	SEP1;
-	printf("active");
-	SEP2;
-	printf("%d\n", getMostUsed(data));
-}
-
-void printThemeOptions(Data *data, int theme) {
-	SEP1;
-	printf("prompt");
-	SEP2;
-	printf("Theme %d\n", theme);
-
-	generateThemeOptions(data, theme);
-}
 
 void inputHandler(Data *data, char *input) {
 	char * original_info = getenv("ROFI_INFO");
