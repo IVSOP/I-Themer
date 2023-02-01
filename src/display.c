@@ -234,33 +234,46 @@ void generateThemeOptions(Data *data, int selected_theme) {
 
 	g_hash_table_iter_init (&iter, data->main_table);
 	for (i = 0; g_hash_table_iter_next (&iter, (void **)&key, (void **)&current); i++) {
-		arr = current->arr;
-		mode = ((char *)(&arr[2])->info)[5] / 59;
-		printf("%s", key);
-		if (mode == 1) { // sub
-			printf(" --> %d/%d", current->dependency_table->active[selected_theme], getTableSize(current->dependency_table));
-		}
-		SEP1;
-		printf("info");
-		SEP2;
-		printf("theme%d/%s(%d)", selected_theme, key, mode);
-		SEP2;
-		printf("icon");
-		SEP2;
-		// no matter subtheme, colors is of the main theme
-		if (arr[1].type == INT) {	
-			theme = (int)((long int)(arr[1].info));
-		} else { // INT_VERSION
-			theme = ((Theme *)arr[1].info)->big;
-		}
-		printf("%s/%s\n", home, getColor(data, theme));
+		// if (i == 2) {
+			arr = current->arr;
+			mode = ((char *)(&arr[2])->info)[5] / 59;
+			if (arr[1].type == INT) {	
+				theme = (int)((long int)(arr[1].info));
+			} else { // INT_VERSION
+				theme = ((Theme *)arr[1].info)->big;
+			}
+			printf("mode %d theme %d selected_theme %d", mode, theme, selected_theme);
+		// } else {
+			// arr = current->arr;
+			// mode = ((char *)(&arr[2])->info)[5] / 59;
+			printf("%s", key);
+			if (mode == 1) { // sub
+				printf(" --> %d/%d", current->dependency_table->active[selected_theme], getTableSize(current->dependency_table));
+			}
+			SEP1;
+			printf("info");
+			SEP2;
+			printf("theme%d/%s(%d)", selected_theme, key, mode);
+			SEP2;
+			printf("icon");
+			SEP2;
+			// no matter subtheme, colors is of the main theme
+			// if (arr[1].type == INT) {	
+			// 	theme = (int)((long int)(arr[1].info));
+			// } else { // INT_VERSION
+			// 	theme = ((Theme *)arr[1].info)->big;
+			// }
 
-		active[i] = theme == selected_theme ? 1 : 0;
+			printf("%s/%s\n", home, getColor(data, theme));
+
+			active[i] = (theme == selected_theme) ? 1 : 0;
+		// }
 	}
 
 	if (i == 0) {
 		// No info, will go straight to main menu
 		printf("No options available\n");
+		return;
 	}
 
 	SEP1;
@@ -274,6 +287,9 @@ void generateThemeOptions(Data *data, int selected_theme) {
 	}
 	printf("\nBack\n");
 	// info is not defined so it will be null and take you back to main menu
+
+	putchar('\n');
+
 }
 
 // switch??? jump table???

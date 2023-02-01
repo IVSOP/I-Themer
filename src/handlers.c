@@ -124,3 +124,57 @@ void subHandler(Data *data, char *info, int offset) {
 		}
 	}
 }
+
+// applies all options in a given table to a given theme, recursively
+// in case of array: applies first option
+void allHandler(Data *data, char *info, int offset) {
+	int theme = atoi(info + 5), i;
+	applyAll(data, theme);
+
+	for (i = 0; info[i] != '/'; i++);
+	if (offset == i + 1) { // clicked all in the first menu of a theme
+		generateThemeOptions(data, theme);
+	} else {
+		info[offset - 1] = '\0';
+		// displaySub(data, info, i + 1); this is bad because data is already the dependency table of something
+		// either: copy paste display sub but without using dependency table
+		// or: trace the entire path back to the menu it is supposed to be in -> bad because original table was lost, would have to parse again
+		displaySubWithoutDep(data, info, i + 1);
+	}
+}
+
+// change to jump table??
+void applyAll(Data *data, int theme) {
+	GHashTableIter iter;
+	char *key = NULL;
+	DataObjArray *current = NULL;
+	char mode;
+	DataObj *tmp;
+
+	g_hash_table_iter_init (&iter, data->main_table);
+	while (g_hash_table_iter_next (&iter, (void **)&key, (void **)&current))
+	{
+		tmp = &(current->arr[2]);
+		mode = ((char *)tmp->info)[5];
+		switch (mode) {
+			case '\0': // apply
+				changeTheme(current->arr, theme, 0);
+				break;
+			case 'v': // var
+				changeTheme(current->arr, theme, 1);
+				break;
+			case 's': // sub
+				changeTheme(current->arr, theme, 0);
+				applyAll(current->dependency_table, theme);
+				break;
+		}
+	}
+	// forgot to update the 'active' part of the table struct, making it so number of things active does not update instantly
+	// this means it only worked for themes by coincidence, since it is recalculated sinze the tables are parsed again when going back
+	// no need to count how many things changed, the number will be equal to size of the table
+	// NOTE: in the future, if changeTheme is also altered, this should do a full check as to see how in many areas the theme was actually applied.
+	// Maybe it would be easier to make changeTheme return 0 on error (tried to apply theme when there is no data to apply it) and use that to count
+	// However this kind of breaks when applying all options in a submenu, since currently it changes first and asks questions later
+	// Might fix in the future: applyAll first, then see how many options were changed, then update current table accordingly?
+	data->active[theme] = g_hash_table_size(data->main_table);
+}

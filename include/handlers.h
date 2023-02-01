@@ -10,5 +10,6 @@ void applyHandler(Data *data, char *info, int offset);
 void varHandler(Data *data, char *info, int offset);
 void subHandler(Data *data, char *info, int offset);
 void allHandler(Data *data, char *info, int offset);
+void applyAll(Data *data, int theme);
 
 #endif

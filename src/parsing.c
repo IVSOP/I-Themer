@@ -315,11 +315,10 @@ void outEmpty(void *data, FILE *fp) {
 	return;
 }
 
+// this, for now, changes theme for no regard to whether it is possible to change to that theme or not
+// change this in the future
 void changeTheme(DataObj *arr, int big, int small) {
-	DataObj *themeobj = &arr[1],
-	*infoObj = &arr[big + 3];
-
-	if (infoObj->info == NULL) return; // if it is empty (or info == NULL) then do nothing
+	DataObj *themeobj = &arr[1];
 
 	if (themeobj->type == INT) {
 		if (small == 0) {
@@ -376,50 +375,4 @@ inline int getMostUsed(Data *data) {
 
 inline int getTableSize(Data *data) {
 	return g_hash_table_size(data->main_table);
-}
-
-// change to jump table??
-void applyAll(Data *data, int theme) {
-	GHashTableIter iter;
-	char *key = NULL;
-	DataObjArray *current = NULL;
-	char mode;
-	DataObj *tmp;
-
-	g_hash_table_iter_init (&iter, data->main_table);
-	while (g_hash_table_iter_next (&iter, (void **)&key, (void **)&current))
-	{
-		tmp = &(current->arr[2]);
-		mode = ((char *)tmp->info)[5];
-		switch (mode) {
-			case '\0': // apply
-				changeTheme(current->arr, theme, 0);
-				break;
-			case 'v': // var
-				changeTheme(current->arr, theme, 1);
-				break;
-			case 's': // sub
-				changeTheme(current->arr, theme, 0);
-				applyAll(current->dependency_table, theme);
-				break;
-		}
-	}
-}
-
-// applies all options in a given table to a given theme, recursively
-// in case of array: applies first option
-void allHandler(Data *data, char *info, int offset) {
-	int theme = atoi(info + 5), i;
-	applyAll(data, theme);
-
-	for (i = 0; info[i] != '/'; i++);
-	if (offset == i + 1) {
-		generateThemeOptions(data, theme);
-	} else {
-		info[offset - 1] = '\0';
-		// displaySub(data, info, i + 1); this is bad because data is already the dependency table of something
-		// either: copy paste display sub but without using dependency table
-		// or: trace the entire path back to the menu it is supposed to be in -> bad because original table was lost, would have to parse again
-		displaySubWithoutDep(data, info, i + 1);
-	}
 }
