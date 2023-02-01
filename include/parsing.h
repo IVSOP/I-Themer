@@ -76,8 +76,6 @@ int getThemeBig(DataObj *themeobj);
 int getMostUsed(Data *data);
 int getTableSize(Data *data);
 
-void changeTheme(DataObj *arr, int big, int small);
-
 //freeing
 void freeTableData(Data *data);
 

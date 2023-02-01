@@ -28,7 +28,7 @@ void applyHandler(Data *data, char *info, int offset) {
 	// info[i] = '(';
 	// info is theme<x>/...
 	int theme = atoi(info + 5);
-	changeTheme(dataobjarray->arr, theme, 0);
+	changeThemeApply(dataobjarray->arr, theme, data->active);
 
 	// back to previous menu
 	int j;
@@ -151,6 +151,8 @@ void applyAll(Data *data, int theme) {
 	char mode;
 	DataObj *tmp;
 
+	int *active = data->active, old_theme, new_theme;
+
 	g_hash_table_iter_init (&iter, data->main_table);
 	while (g_hash_table_iter_next (&iter, (void **)&key, (void **)&current))
 	{
@@ -158,23 +160,59 @@ void applyAll(Data *data, int theme) {
 		mode = ((char *)tmp->info)[5];
 		switch (mode) {
 			case '\0': // apply
-				changeTheme(current->arr, theme, 0);
+				changeThemeApply(current->arr, theme, active);
 				break;
 			case 'v': // var
-				changeTheme(current->arr, theme, 1);
+				changeThemeVar(current->arr, theme, 1, active);
 				break;
 			case 's': // sub
-				changeTheme(current->arr, theme, 0);
+				// applies to all in subtable, then changes the theme to whatever the new most used theme is
+				// also updates data->active[]
 				applyAll(current->dependency_table, theme);
+				tmp = &(current->arr[1]); // contains theme
+				old_theme = (long int)tmp->info;
+				new_theme = getMostUsed(current->dependency_table);
+				// if (old_theme != new_theme) {
+				data->active[old_theme] -= 1;
+				data->active[new_theme] += 1;
+				tmp->info = (void *) ((long int)new_theme);
+				// }
 				break;
 		}
 	}
-	// forgot to update the 'active' part of the table struct, making it so number of things active does not update instantly
-	// this means it only worked for themes by coincidence, since it is recalculated sinze the tables are parsed again when going back
-	// no need to count how many things changed, the number will be equal to size of the table
-	// NOTE: in the future, if changeTheme is also altered, this should do a full check as to see how in many areas the theme was actually applied.
-	// Maybe it would be easier to make changeTheme return 0 on error (tried to apply theme when there is no data to apply it) and use that to count
-	// However this kind of breaks when applying all options in a submenu, since currently it changes first and asks questions later
-	// Might fix in the future: applyAll first, then see how many options were changed, then update current table accordingly?
-	data->active[theme] = g_hash_table_size(data->main_table);
+	// calculate new max
+	int i, max = 0;
+	for (i = 1; i < (const int)data->color_icons->len; i++) {
+		if (active[max] < active[i]) max = i;
+	}
+	active[i] = max;
+}
+
+void changeThemeApply(DataObj *arr, int theme, int *active) {
+	DataObj *themeObj = &arr[1], *infoObj = &arr[3 + theme];
+	int old_theme = (long int)themeObj->info;
+	if (old_theme != theme) {
+		if (infoObj->type != EMPTY) {
+			themeObj->info = (void *)((long int)theme);
+			active[old_theme] -= 1;
+			active[theme] += 1;
+		}
+	}
+}
+
+void changeThemeVar(DataObj *arr, int big, int small, int *active) {
+	DataObj *themeObj = &arr[1], *infoObj = &arr[big + 3];
+	Theme *old_theme = (Theme *)themeObj->info;
+	// printf("%d %d %d %d\n", old_theme->big, big, old_theme->small, small);
+	if (old_theme->big != big || old_theme->small != small) {
+		if (infoObj->type != EMPTY) {
+			infoObj = &(((DataObjArray *)infoObj->info)->arr[small - 1]);
+			if (infoObj->type != EMPTY) {
+				old_theme->big = big;
+				old_theme->small = small;
+				active[old_theme->big] -= 1;
+				active[big] += 1;
+			}
+		}
+	}
 }

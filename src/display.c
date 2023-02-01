@@ -242,10 +242,6 @@ void generateThemeOptions(Data *data, int selected_theme) {
 			} else { // INT_VERSION
 				theme = ((Theme *)arr[1].info)->big;
 			}
-			printf("mode %d theme %d selected_theme %d", mode, theme, selected_theme);
-		// } else {
-			// arr = current->arr;
-			// mode = ((char *)(&arr[2])->info)[5] / 59;
 			printf("%s", key);
 			if (mode == 1) { // sub
 				printf(" --> %d/%d", current->dependency_table->active[selected_theme], getTableSize(current->dependency_table));
@@ -257,17 +253,10 @@ void generateThemeOptions(Data *data, int selected_theme) {
 			SEP2;
 			printf("icon");
 			SEP2;
-			// no matter subtheme, colors is of the main theme
-			// if (arr[1].type == INT) {	
-			// 	theme = (int)((long int)(arr[1].info));
-			// } else { // INT_VERSION
-			// 	theme = ((Theme *)arr[1].info)->big;
-			// }
 
 			printf("%s/%s\n", home, getColor(data, theme));
 
 			active[i] = (theme == selected_theme) ? 1 : 0;
-		// }
 	}
 
 	if (i == 0) {

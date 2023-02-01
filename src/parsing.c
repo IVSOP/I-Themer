@@ -315,33 +315,6 @@ void outEmpty(void *data, FILE *fp) {
 	return;
 }
 
-// this, for now, changes theme for no regard to whether it is possible to change to that theme or not
-// change this in the future
-void changeTheme(DataObj *arr, int big, int small) {
-	DataObj *themeobj = &arr[1];
-
-	if (themeobj->type == INT) {
-		if (small == 0) {
-			themeobj->info = (void *)((long int)big);
-		} else {
-			Theme *new = malloc(sizeof(Theme));
-			new->big = big; new->small = small;
-			themeobj->info = (void *)new;
-			themeobj->type = INT_VERSION;
-		}
-	} else if (themeobj->type == INT_VERSION) {
-		if (small == 0) {
-			free(themeobj->info);
-			themeobj->info = (void *)((long int)big);
-			themeobj->type = INT;
-		} else {
-			Theme *theme = (Theme *)themeobj->info;
-			theme->big = big;
-			theme->small = small;
-		}
-	}
-}
-
 GPtrArray *parseColors(char *name) {
 	GPtrArray *arr = g_ptr_array_new_full(3, free);
 	char str[BUFFER_SIZE];
