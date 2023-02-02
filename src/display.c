@@ -26,8 +26,8 @@ void displaySubWithoutDep(Data *data, char *str, int offset) {
 	for (i = 0; g_hash_table_iter_next (&iter, (void **)&key, (void **)&current); i++)
 	{
 		arr = current->arr;
-		mode = ((char *)((&arr[2])->info))[5];
-		infostr = (char *)((&arr[0])->info);
+		mode = current->mode;
+		infostr = current->name;
 		// assume it can only be int or int_version
 		theme =	(&arr[1])->type == INT ? (int)((long int)((&arr[1])->info)) : ((Theme *)((&arr[1])->info))->big;
 		active[i] = theme == original_theme ? 1 : 0;
@@ -92,7 +92,7 @@ void displayVar(Data *data, char *str, int offset) {
 	char *home = getenv("HOME");
 
 	// kind of a bad solution, but background images are show as what the info itself says
-	if (strncmp((char *)(&dataobjarray->arr[0])->info, "background", 10) == 0) {
+	if (strncmp(dataobjarray->name, "background", 10) == 0) {
 		for (i = 0; i < len; i++) {
 			current = &arr[i];
 			printDataObj(current);
@@ -167,8 +167,8 @@ void displaySub(Data *data, char *str, int offset) {
 	for (i = 0; g_hash_table_iter_next (&iter, (void **)&key, (void **)&current); i++)
 	{
 		arr = current->arr;
-		mode = ((char *)((&arr[2])->info))[5];
-		infostr = (char *)((&arr[0])->info);
+		mode = current->mode;
+		infostr = current->name;
 		// assume it can only be int or int_version
 		theme =	(&arr[1])->type == INT ? (int)((long int)((&arr[1])->info)) : ((Theme *)((&arr[1])->info))->big;
 		active[i] = theme == original_theme ? 1 : 0;
@@ -236,14 +236,14 @@ void generateThemeOptions(Data *data, int selected_theme) {
 	for (i = 0; g_hash_table_iter_next (&iter, (void **)&key, (void **)&current); i++) {
 		// if (i == 2) {
 			arr = current->arr;
-			mode = ((char *)(&arr[2])->info)[5] / 59;
+			mode = current->mode;
 			if (arr[1].type == INT) {	
 				theme = (int)((long int)(arr[1].info));
 			} else { // INT_VERSION
 				theme = ((Theme *)arr[1].info)->big;
 			}
 			printf("%s", key);
-			if (mode == 1) { // sub
+			if (mode == SUB) { // sub
 				printf(" --> %d/%d", current->dependency_table->active[selected_theme], getTableSize(current->dependency_table));
 			}
 			SEP1;

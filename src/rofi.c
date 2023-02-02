@@ -32,7 +32,7 @@ void inputHandler(Data *data, char *input) {
 			int j;
 			for (j = i + 1; info[j] != '('; j++);
 			handlerFunc *handlers[] = {applyHandler, subHandler, varHandler, allHandler};
-			handlers[(int)(info[j + 1] - 48)](data, info, i + 1);
+			handlers[info[j + 1] - '0'](data, info, i + 1);
 		}
 	}
 }

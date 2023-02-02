@@ -13,7 +13,7 @@ typedef enum {
 	STRING = 1,
 	INT_VERSION = 2, // will get stored as string
 	EMPTY = 3,
-	LIST = 4, // stored as DataObjArray *, not as Data *
+	LIST = 4, // stored as List *, not as Data *
 } TYPE;
 
 #define SEP1 putchar('\0')
@@ -23,6 +23,7 @@ typedef struct DataObj DataObj;
 typedef struct Data Data;
 typedef struct DataObjArray DataObjArray;
 typedef struct Theme Theme;
+typedef struct List List;
 
 struct DataObj {
 	void *info;
@@ -35,8 +36,24 @@ struct Data {
 	int *active;
 };
 
+struct List {
+	DataObj *arr;
+	int len;
+};
+
+typedef enum {
+	APPLY = 0,
+	SUB = 1,
+	VAR = 2,
+	ALL = 3,
+} Mode;
+
 //contains data from an entire line
 struct DataObjArray {
+	char *name;
+	Mode mode;
+	void *theme;
+	List *list;
 	DataObj *arr;
 	int len; // number of fiels so I know how many to free
 	Data * dependency_table;

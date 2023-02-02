@@ -94,6 +94,21 @@ DataObjArray *parseLineString(char *str, ssize_t strlen) {
 	}
 
 	DataObjArray *final = malloc(sizeof(DataObjArray));
+
+	if (i >= 0) {
+		final->name = (char *)((&arr[0])->info);
+	}
+	if (i >= 2) {
+		char *str2 = (char *)((&arr[2])->info);
+		if (strncmp(str2, "apply", 5) == 0) {
+			final->mode = APPLY;
+		} else if (strncmp(str2, "show_var", 8) == 0) {
+			final->mode = VAR;
+		} else if (strncmp(str2, "show_sub", 8) == 0) {
+			final->mode = SUB;
+		}
+	}
+
 	final->len = len;
 	final->arr = malloc(len*sizeof(DataObj));
 	final->arr = memcpy(final->arr, arr, len*sizeof(DataObj));
@@ -123,7 +138,6 @@ DataObjArray *parseLine(FILE *fp) {
 	buffsiz = buffsiz;
 }
 
-// THIS IS SKETCHY!!!!
 inline int getThemeBig(DataObj *themeobj) {
 	return (themeobj->type == INT ? (int)((long int)themeobj->info) : *(int *)themeobj->info);
 }
@@ -137,14 +151,13 @@ Data *parseMainTable(FILE *fp, GPtrArray *colorArr) {
 	// key destroy func is NULL since they will be freed when the remaining data is freed (they are shared)
 	GHashTable * table = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, freeTableStruct);
 	DataObjArray *lineData = parseLine(fp);
-	DataObj *tmp;
 	int current_theme, biggest;
 	while (lineData != NULL) {
-		char mode = ((char *)(&lineData->arr[2])->info)[5];
+		char mode = lineData->mode;
 		current_theme = getThemeBig(&lineData->arr[1]);
-		if (mode == 's') { // mode is sub, needs its dependencies resolved
+		if (mode == SUB) { // mode is sub, needs its dependencies resolved
 			char str[BUFFER_SIZE];
-			snprintf(str, BUFFER_SIZE, "%s/%s.tb", TABLE_PATH, (char *)(&lineData->arr[0])->info);
+			snprintf(str, BUFFER_SIZE, "%s/%s.tb", TABLE_PATH, lineData->name);
 			FILE *fp2 = fopen(str, "r");
 			CHECK_FILE_ERROR(fp2)
 			lineData->dependency_table = parseMainTable(fp2, colorArr);
@@ -164,7 +177,6 @@ Data *parseMainTable(FILE *fp, GPtrArray *colorArr) {
 			active[current_theme] += 1;
 			// printf("adding theme %d to %s\n", getThemeBig(&lineData->arr[1]), ((char *)(&lineData->arr[0])->info));
 		}
-		tmp = &(lineData->arr)[0];
 		// if (tmp->type != STRING) {
 		// 	fprintf(stderr, "For now the hash table is designed to use strings in the hashing function, please start all lines with a string\nError thrown in %s\n", __func__);
 		// 	exit(1);
@@ -176,7 +188,7 @@ Data *parseMainTable(FILE *fp, GPtrArray *colorArr) {
 		}
 		active[current_theme] = biggest;
 
-		g_hash_table_insert(table, tmp->info, lineData);
+		g_hash_table_insert(table, lineData->name, lineData);
 		lineData = parseLine(fp);
 	}
 
@@ -270,7 +282,7 @@ void outLine(DataObjArray *dataobjarray, FILE *fp) {
 	outDispatchTable[(&arr[i])->type]((&arr[i])->info, fp);
 	fputc('\n', fp);
 	if (dataobjarray->dependency_table != NULL) {
-		saveTableToFile(dataobjarray->dependency_table, (char *)(&arr[0])->info);
+		saveTableToFile(dataobjarray->dependency_table, dataobjarray->name);
 	}
 }
 

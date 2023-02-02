@@ -41,7 +41,7 @@ void applyHandler(Data *data, char *info, int offset) {
 		printThemeOptions(data, theme);
 	} else {
 		for (i = offset - 2; info[i] != '/'; i--);
-		if (info[offset - 3] == '1') { // sub
+		if (info[offset - 3] - '\0' == SUB) { // sub
 			// crashing because it needs to go back to a data * that no longer exists. need to apply in sub.
 			// subHandler(data, info, i + 1);
 			// for now, this will do nothing, since the apply of the new theme is correct but the display of previous data isn't
@@ -103,22 +103,22 @@ void subHandler(Data *data, char *info, int offset) {
 		// see error in apply handler for explanation as to why this doesnt work
 		// handlerFunc *handlers[] = {applyHandler, subHandler, varHandler};
 		// handlers[(int)(info[j + 1] - 48)](dataobjarray->dependency_table, info, i + 1);
-		switch ((int)(info[j + 1] - 48))
+		switch ((info[j + 1] - '0'))
 		{
-		case 0: // apply
+		case APPLY: // apply
 			applyHandler(dataobjarray->dependency_table, info, i + 1); // I assume some magic happens here and a \0 is perfectly placed to allow to pass info + i + 1 next
 			// magic is correct but offset is not
 			// ineficient but idc
 			for (i -= 1; info[i] != '/'; i--);
 			displaySub(data, info, i + 1);
 			break;
-		case 1: // sub
+		case SUB: // sub
 			subHandler(dataobjarray->dependency_table, info, i + 1);
 			break;
-		case 2: // var
+		case VAR: // var
 			varHandler(dataobjarray->dependency_table, info, i + 1);
 			break;
-		case 3:
+		case ALL:
 			allHandler(dataobjarray->dependency_table, info, i + 1);
 			break;
 		}
@@ -157,15 +157,15 @@ void applyAll(Data *data, int theme) {
 	while (g_hash_table_iter_next (&iter, (void **)&key, (void **)&current))
 	{
 		tmp = &(current->arr[2]);
-		mode = ((char *)tmp->info)[5];
+		mode = current->mode;
 		switch (mode) {
-			case '\0': // apply
+			case APPLY: // apply
 				changeThemeApply(current->arr, theme, active);
 				break;
-			case 'v': // var
+			case VAR: // var
 				changeThemeVar(current->arr, theme, 1, active);
 				break;
-			case 's': // sub
+			case SUB: // sub
 				// applies to all in subtable, then changes the theme to whatever the new most used theme is
 				// also updates data->active[]
 				applyAll(current->dependency_table, theme);
