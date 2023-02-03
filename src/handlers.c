@@ -28,7 +28,7 @@ void applyHandler(Data *data, char *info, int offset) {
 	// info[i] = '(';
 	// info is theme<x>/...
 	int theme = atoi(info + 5);
-	changeThemeApply(dataobjarray->arr, theme, data->active);
+	changeThemeApply(dataobjarray->list->arr, theme, data->active);
 
 	// back to previous menu
 	int j;
@@ -70,7 +70,7 @@ void varHandler(Data *data, char *info, int offset) {
 			info[j] = '(';
 			// theme<x>...
 			int new_theme = atoi(info + 5);
-			Theme *theme = (Theme *)((&dataobjarray->arr[1])->info);
+			Theme *theme = (Theme *)(getThemeObj(dataobjarray)->info);
 			// printf("changing theme from %d.%d to %d.%d\n", theme->big, theme->small, new_theme, (int)res);
 			theme->big = new_theme;
 			theme->small = (int)res;
@@ -156,20 +156,20 @@ void applyAll(Data *data, int theme) {
 	g_hash_table_iter_init (&iter, data->main_table);
 	while (g_hash_table_iter_next (&iter, (void **)&key, (void **)&current))
 	{
-		tmp = &(current->arr[2]);
+		tmp = &(current->list->arr[2]);
 		mode = current->mode;
 		switch (mode) {
 			case APPLY: // apply
-				changeThemeApply(current->arr, theme, active);
+				changeThemeApply(current->list->arr, theme, active);
 				break;
 			case VAR: // var
-				changeThemeVar(current->arr, theme, 1, active);
+				changeThemeVar(current->list->arr, theme, 1, active);
 				break;
 			case SUB: // sub
 				// applies to all in subtable, then changes the theme to whatever the new most used theme is
 				// also updates data->active[]
 				applyAll(current->dependency_table, theme);
-				tmp = &(current->arr[1]); // contains theme
+				tmp = getThemeObj(current);
 				old_theme = (long int)tmp->info;
 				new_theme = getMostUsed(current->dependency_table);
 				// if (old_theme != new_theme) {
@@ -201,12 +201,16 @@ void changeThemeApply(DataObj *arr, int theme, int *active) {
 }
 
 void changeThemeVar(DataObj *arr, int big, int small, int *active) {
-	DataObj *themeObj = &arr[1], *infoObj = &arr[big + 3];
+	DataObjArray idk; List idklist;
+	idklist.arr = arr;
+	idk.list = &idklist;
+
+	DataObj *themeObj = getThemeObj(&idk), *infoObj = &arr[big + 3];
 	Theme *old_theme = (Theme *)themeObj->info;
 	// printf("%d %d %d %d\n", old_theme->big, big, old_theme->small, small);
 	if (old_theme->big != big || old_theme->small != small) {
 		if (infoObj->type != EMPTY) {
-			infoObj = &(((DataObjArray *)infoObj->info)->arr[small - 1]);
+			infoObj = &(((DataObjArray *)infoObj->info)->list->arr[small - 1]);
 			if (infoObj->type != EMPTY) {
 				old_theme->big = big;
 				old_theme->small = small;

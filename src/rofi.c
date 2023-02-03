@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "handlers.h"
+#include "debug.h"
 
 #define TABLE_PATH "I-Themer/data/table.tb"
 #define INFO_SIZE 512
@@ -44,6 +45,9 @@ int mainRofiLoop(char *input) {
 	GPtrArray *colorArr = parseColors("color-icons");
 
 	Data *data = parseMainTable(fp, colorArr);
+
+	dumpTable(data, 0);
+	exit(1);
 
 	inputHandler(data, input);
 

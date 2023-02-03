@@ -92,6 +92,7 @@ int getActivePerTheme(Data *data, int theme);
 int getThemeBig(DataObj *themeobj);
 int getMostUsed(Data *data);
 int getTableSize(Data *data);
+DataObj * getThemeObj(DataObjArray *dataobjarray);
 
 //freeing
 void freeTableData(Data *data);

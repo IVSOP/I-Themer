@@ -15,8 +15,8 @@ void query0(Data *data, char *info) {
 		// case 1: is a string, and type is not int -> NOT POSSIBLE
 		// case 2: is a list, and type is int -> print entire list
 		// case 3: is a list, and type is not int -> print an element of the list
-		DataObj *arr = dataobjarray->arr,
-		*themeobj = &arr[1];
+		DataObj *arr = dataobjarray->list->arr,
+		*themeobj = getThemeObj(dataobjarray);
 		if (themeobj->type == INT_VERSION) {
 			// assumed to be list, and print a single element
 			Theme *theme = (Theme *)themeobj->info;

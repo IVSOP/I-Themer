@@ -38,80 +38,112 @@ inline char get_last_char(char *str) {
 	return *(str--);
 }
 
-// takes in string for (what is thinks) is the entire line and turns it into DataObjArray *, mallocing as needed
-// the string includes the \n in [strlen - 1]
-DataObjArray *parseLineString(char *str, ssize_t strlen) {
-	DataObj arr[DATA_BUFF_SIZE], *tmp;
-	int len = 0, // number of structs in the array
-	i;
-	char chr;
-	str[strlen-1] = ';';
+void *parseTheme(char *str, int *len) {
+	char *endptr;
+	long int big = strtol(str, &endptr, 10);
+	if (str == endptr) {
+		fprintf(stderr, "Theme is empty\n");
+		exit(1);
+	}
+	if (*endptr == '.') {
+		char *endptr2;
+		int small = strtol(endptr + 1, &endptr2, 10);
+		if (*endptr2 != ';') {
+			fprintf(stderr, "Invalid theme\n");
+			exit(1);
+		}
+		Theme *theme = malloc(sizeof(Theme));
+		theme->big = (int)big;
+		theme->small = small;
+		(*len) += (endptr2 - str) + 1;
+		return theme;
+	} else if (*endptr != ';') {
+		fprintf(stderr, "Invalid theme\n");
+		exit(1);
+	} else {
+		*len += (endptr - str) + 1;
+		return (void *)big;
+	}
+}
 
-	for (i = 0; i < (int)strlen; i++) {
+// parses remainder of line, without name, theme and mode
+// (can be used to parse a list)
+List *parseParameters(char *str, ssize_t strlen) {
+	str[strlen-1] = ';';
+	// printf("parsing parameters %.*s\n", (int)strlen, str);
+	DataObj arr[DATA_BUFF_SIZE], *tmp;
+	char chr;
+	int j;
+
+	int len, i;
+	for (i = len = 0; i < (int)strlen; i++) {
+		// printf("[%d] %d\n", len, i);
 		tmp = &arr[len];
-		// printf("current string: %s (%d)", str + i, i);
 		chr = str[i];
 		if (chr == '[') {
-			int nested = 1, j;
-			for (j = i + 1; j < (int)strlen && nested > 0; j++) {
-				if (str[j] == '[') nested++;
-				else if (str[j] == ']') nested--;
-			}
-			// at his stage, str[i until j] has the string that needs to be parsed into a list
-			// str[i] is at '[' and str[j] is at ';' after ']'
+			for (j = i + 1; str[j] != ']'; j++);
 			tmp->type = LIST;
-			tmp->info = parseLineString(str + i + 1, j - i - 1); // wtf???
-			i = j;
+			// printf("parsing list\n");// %.*s\n", j - i - 1, str + i + 1);
+			tmp->info = parseParameters(str + i + 1, j - i);
+			// printf("parsing list ended\n");
+			i = j + 1;
 		} else if (chr == ';') {
 			tmp->type = EMPTY;
 			tmp->info = NULL;
-		} else {
-			char *endptr;
-			long int res = strtol(str + i, &endptr, 10);
-			if (endptr != str + i) { // did read int
-				if (*endptr == '.') {
-					int offset = 0;
-					tmp->type = INT_VERSION;
-					// could both be stored inside void * since it is 8 bytes, but this is clearer
-					Theme *theme = malloc(sizeof(Theme));
-					theme->big = (int)res;
-					theme->small = readInt(endptr + 1, &offset);
-					tmp->info = theme;
-					i += offset + 2; // ??????? idk
-				} else {
-					tmp->type = INT;
-					tmp->info = (void *) res;
-					i++;
-				}
-			} else {
-				int offset = 0;
-				tmp->type = STRING;
-				tmp->info = readString(str + i, &offset);
-				i += offset - 1;
-			}
+		} else { // string, numbers are also treated as strings since theme has already been parsed
+			tmp->type = STRING;
+			tmp->info = readString(str + i, &i);
+			i--;
 		}
+		// printf("[%d] has type %d\n", len, tmp->type);
 		len++;
 	}
 
+	// if (len == 0) {
+	// 	fprintf(stderr, "Empty list, can't parse\n");
+	// }
+	List *list = malloc(sizeof(List));
+	list->len = len;
+	list->arr = malloc(sizeof(DataObj) * len);
+	list->arr = memcpy(list->arr, arr, len * sizeof(DataObj));
+	return list;
+}
+
+Mode parseMode(char *str, int *len) {
+	// improve this???
+	if (strncmp(str, "apply", 5) == 0) {
+		(*len) += 6;
+		return APPLY;
+	} else if (strncmp(str, "show_var", 8) == 0) {
+		(*len) += 9;
+		return VAR;
+	} else if (strncmp(str, "show_sub", 8) == 0) {
+		(*len) += 9;
+		return SUB;
+	} else {
+		fprintf(stderr, "Invalid mode\n");
+		exit(1);
+	}
+}
+
+// takes in string for (what is thinks) is the entire line and turns it into DataObjArray *, mallocing as needed
+// the string includes the \n in [strlen - 1]
+DataObjArray *parseLineString(char *str, ssize_t strlen) {
+	int i = 0;
+
+	// printf("parsing line\n");
+
 	DataObjArray *final = malloc(sizeof(DataObjArray));
+	final->name = readString(str, &i);
+	// printf("name: %s\n", final->name);
 
-	if (i >= 0) {
-		final->name = (char *)((&arr[0])->info);
-	}
-	if (i >= 2) {
-		char *str2 = (char *)((&arr[2])->info);
-		if (strncmp(str2, "apply", 5) == 0) {
-			final->mode = APPLY;
-		} else if (strncmp(str2, "show_var", 8) == 0) {
-			final->mode = VAR;
-		} else if (strncmp(str2, "show_sub", 8) == 0) {
-			final->mode = SUB;
-		}
-	}
+	final->theme = parseTheme(str + i, &i);
 
-	final->len = len;
-	final->arr = malloc(len*sizeof(DataObj));
-	final->arr = memcpy(final->arr, arr, len*sizeof(DataObj));
+	final->mode = parseMode(str +i, &i);
+	// printf("mode: %d\n", final->mode);
+
+	final->list = parseParameters(str + i, strlen - i);
+
 	final->dependency_table = NULL;
 	return final;
 }
@@ -153,34 +185,43 @@ Data *parseMainTable(FILE *fp, GPtrArray *colorArr) {
 	DataObjArray *lineData = parseLine(fp);
 	int current_theme, biggest;
 	while (lineData != NULL) {
-		char mode = lineData->mode;
-		current_theme = getThemeBig(&lineData->arr[1]);
-		if (mode == SUB) { // mode is sub, needs its dependencies resolved
-			char str[BUFFER_SIZE];
-			snprintf(str, BUFFER_SIZE, "%s/%s.tb", TABLE_PATH, lineData->name);
-			FILE *fp2 = fopen(str, "r");
-			CHECK_FILE_ERROR(fp2)
-			lineData->dependency_table = parseMainTable(fp2, colorArr);
-			fclose(fp2);
-			// need to update current selected theme, based on the most used theme
-			// is sub, so can be sure it is an INT and not INT_VERSION
-			if ((biggest = lineData->dependency_table->active[(const int)colorArr->len]) == current_theme) {
-				// if the most used is the same as current, no need to update it
-				active[current_theme] += 1;
-			} else {
-				// else have to change it and active[other theme] += 1
-				(&lineData->arr[1])->info = (void *)((long int)biggest);
-				active[biggest] += 1;
-			}
-			
-		} else {
+		if (lineData->mode == VAR) {
+			current_theme = ((Theme *)lineData->theme)->big;
 			active[current_theme] += 1;
-			// printf("adding theme %d to %s\n", getThemeBig(&lineData->arr[1]), ((char *)(&lineData->arr[0])->info));
+		} else {
+			current_theme = (long int)lineData->theme;
+			if (lineData->mode == SUB) { // mode is sub, needs its dependencies resolved
+				current_theme = (long int)lineData->theme;
+				char str[BUFFER_SIZE];
+				snprintf(str, BUFFER_SIZE, "%s/%s.tb", TABLE_PATH, lineData->name);
+				FILE *fp2 = fopen(str, "r");
+				CHECK_FILE_ERROR(fp2)
+				lineData->dependency_table = parseMainTable(fp2, colorArr);
+				fclose(fp2);
+				// need to update current selected theme, based on the most used theme
+				// is sub, so can be sure it is an INT and not INT_VERSION
+				if ((biggest = lineData->dependency_table->active[(const int)colorArr->len]) == current_theme) {
+					// if the most used is the same as current, no need to update it
+					active[current_theme] += 1;
+				} else {
+					// else have to change it and active[other theme] += 1
+					lineData->theme = (void *)((long int)biggest);
+					active[biggest] += 1;
+				}
+				
+			} else {
+				active[current_theme] += 1;
+			}
 		}
+			
+			// printf("adding theme %d to %s\n", getThemeBig(&lineData->arr[1]), ((char *)(&lineData->arr[0])->info));
+
 		// if (tmp->type != STRING) {
 		// 	fprintf(stderr, "For now the hash table is designed to use strings in the hashing function, please start all lines with a string\nError thrown in %s\n", __func__);
 		// 	exit(1);
 		// }
+
+		// WHY IS THIS INSIDE THE WHILE LOOP?????????????????????????
 		
 		// 0 will be checked anyway, just start at 1
 		for (current_theme = 1, biggest = 0; current_theme < (const int)colorArr->len; current_theme++) {
@@ -205,7 +246,7 @@ void freeNULL (void *data) {
 void freeTableStruct(void *data) {
 	// if (data == NULL) return;
 	DataObjArray *dataArr = (DataObjArray *)data;
-	DataObj *arr = dataArr->arr, *tmp; // what a mess
+	DataObj *arr = dataArr->list->arr, *tmp; // what a mess
 	int i;
 	freeFunc *freeDispatchTable[] = {freeNULL, free, free, freeNULL, freeTableStruct};
 	for (i = 0; i < (const int)dataArr->len; i++) {
@@ -226,17 +267,17 @@ void freeTableData(Data *data) {
 	}
 }
 
-DataObjArray *tableLookup(Data *data, char *str) {
+inline DataObjArray *tableLookup(Data *data, char *str) {
 	return g_hash_table_lookup(data->main_table, str);
 }
 
-int getLen(DataObjArray *data) {
-	return data->len;
+inline int getLen(DataObjArray *data) {
+	return data->list->len;
 }
 
-DataObj *getDataObj(DataObjArray *data, int i) {
-	if (i >= data->len) return NULL;
-	return &(data->arr)[i];
+inline DataObj *getDataObj(DataObjArray *data, int i) {
+	if (i >= data->list->len) return NULL;
+	return &(data->list->arr)[i];
 }
 
 inline int getActivePerTheme(Data *data, int theme) {
@@ -259,7 +300,7 @@ void freeDataObj(DataObj *data) {
 void outList(void *data, FILE *fp) {
 	DataObjArray *dataobjarray = (DataObjArray *)data;
 	outputFunc *outDispatchTable[] = {outInt, outString, outVersion, outEmpty, outList};
-	const DataObj *arr = dataobjarray->arr;
+	const DataObj *arr = dataobjarray->list->arr;
 	int i, len = dataobjarray->len;
 	fputc('[', fp);
 	for (i = 0; i < len - 1; i++) {
@@ -273,7 +314,7 @@ void outList(void *data, FILE *fp) {
 // kind of like outList except it runs first and doesnt print any '['
 void outLine(DataObjArray *dataobjarray, FILE *fp) {
 	outputFunc *outDispatchTable[] = {outInt, outString, outVersion, outEmpty, outList};
-	const DataObj *arr = dataobjarray->arr;
+	const DataObj *arr = dataobjarray->list->arr;
 	int i, len = dataobjarray->len;
 	for (i = 0; i < len - 1; i++) {
 		outDispatchTable[(&arr[i])->type]((&arr[i])->info, fp);
@@ -360,4 +401,8 @@ inline int getMostUsed(Data *data) {
 
 inline int getTableSize(Data *data) {
 	return g_hash_table_size(data->main_table);
+}
+
+inline DataObj * getThemeObj(DataObjArray *dataobjarray) {
+	return &(dataobjarray->list->arr[1]);
 }

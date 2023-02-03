@@ -4,37 +4,53 @@ void printSpace(int depth) {
 	for (; depth; depth--) putchar(' ');
 }
 
-void dumpDataObjArray(DataObjArray * data, long int depth) {
-	DataObj *arr = data->arr, *tmp;
-	int i;
+void dumpList(List *list, long int depth) {
+	DataObj *tmp, *arr = list->arr;
 	TYPE type;
-	printSpace(depth);
-	printf("[--------------[%ld]\n", depth);
-	for (i = 0; i < (const int)data->len; i++) {
+	int len = list->len, i;
+	for (i = 0; i < len; i++) {
 		tmp = &arr[i];
 		type = tmp->type;
 		printSpace(depth);
-		printf("%d-", i);
-		if (type == INT) {
-			printf("int: %ld\n", (long int)tmp->info);
-		} else if (type == STRING) {
+		if (type == STRING) {
 			printf("string: %s\n", (char *)tmp->info);
 		} else if (type == LIST) {
 			printf("list:\n");
-			dumpDataObjArray((DataObjArray *)tmp->info, depth + 4);
+			dumpList((List *)tmp->info, depth + 4);
 		} else if (type == EMPTY) {
 			printf("empty\n");
-		} else if (type == INT_VERSION) {
-			printf("version: %d.%d\n", ((Theme *)tmp->info)->big, ((Theme *)tmp->info)->small);
+		} else {
+			fprintf(stderr, "Invalid type: %d\n", type);
+			exit(1);
 		}
 	}
+}
+
+void dumpDataObjArray(DataObjArray * data, long int depth) {
+	printSpace(depth);
+	printf("[--------------[%ld]\n", depth);
+	printSpace(depth);
+	printf("Name: %s\n", data->name);
+	printSpace(depth);
+	printf("Mode: %d\n", data->mode);
+	printSpace(depth);
+	printf("Theme: ");
+	if (data->mode == VAR) {
+		Theme *theme = (Theme *)data->theme;
+		printf("%d.%d\n", theme->big, theme->small);
+	} else {
+		printf("%ld\n", (long int)data->theme);
+	}
+	
+	dumpList(data->list, depth);
+
 	if (data->dependency_table != NULL) {
 		printSpace(depth);
 		printf("Found dependency table\n");
 		dumpTable((Data *)data->dependency_table, depth + 4);
 	}
 	printSpace(depth);
-	printf("[--------------[%ld]-[%d]\n", depth, i);
+	printf("[--------------[%ld]\n", depth);
 }
 
 void dumpTableEntry(gpointer key, gpointer value, gpointer user_data) {
