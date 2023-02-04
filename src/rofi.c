@@ -46,12 +46,11 @@ int mainRofiLoop(char *input) {
 
 	Data *data = parseMainTable(fp, colorArr);
 
-	dumpTable(data, 0);
-	exit(1);
+	// dumpTable(data, 0);
 
-	inputHandler(data, input);
+	// inputHandler(data, input);
 
-	// saveTableToFile(data, "table"); // this is inneficient, but it is the only way. doing it on applyHandler would break when data is actually a subtable and not a main table
+	saveTableToFile(data, "table"); // this is inneficient, but it is the only way. doing it on applyHandler would break when data is actually a subtable and not a main table
 	freeTableData(data);
 	g_ptr_array_free(colorArr, TRUE);
 	fclose(fp);

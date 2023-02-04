@@ -10,11 +10,11 @@
 typedef void outputFunc(void*data, FILE *fp);
 
 void freeTableStruct(void *data);
-void outInt(void*data, FILE *fp);
+void outLongInt(void*data, FILE *fp);
 void outString(void*data, FILE *fp);
 void outVersion(void*data, FILE *fp);
 void outEmpty(void*data, FILE *fp);
-void outList(void*data, FILE *fp);
+void outList(List *list, FILE *fp);
 
 char *readString(char *str, int *len) {
 	int i;
@@ -68,15 +68,22 @@ void *parseTheme(char *str, int *len) {
 
 // parses remainder of line, without name, theme and mode
 // (can be used to parse a list)
+// NULL when empty ??
 List *parseParameters(char *str, ssize_t strlen) {
-	str[strlen-1] = ';';
-	// printf("parsing parameters %.*s\n", (int)strlen, str);
+	str[strlen - 1] = ';';
+	// wtf is going on with ';;;' in the print below? adding chars in the middle of a string somehow????
+	// printf("parsing parameters '%.*s'\noriginal: %s\n", (int)strlen - 1, str, str);
 	DataObj arr[DATA_BUFF_SIZE], *tmp;
 	char chr;
 	int j;
 
+	// if (strlen == 0) {
+		// fprintf(stderr, "Empty list, can't parse\n");
+		// return NULL;
+	// }
+
 	int len, i;
-	for (i = len = 0; i < (int)strlen; i++) {
+	for (i = len = 0; i < (int)strlen - 1; i++) { // - 1 ????????????????
 		// printf("[%d] %d\n", len, i);
 		tmp = &arr[len];
 		chr = str[i];
@@ -99,9 +106,6 @@ List *parseParameters(char *str, ssize_t strlen) {
 		len++;
 	}
 
-	// if (len == 0) {
-	// 	fprintf(stderr, "Empty list, can't parse\n");
-	// }
 	List *list = malloc(sizeof(List));
 	list->len = len;
 	list->arr = malloc(sizeof(DataObj) * len);
@@ -131,7 +135,7 @@ Mode parseMode(char *str, int *len) {
 DataObjArray *parseLineString(char *str, ssize_t strlen) {
 	int i = 0;
 
-	// printf("parsing line\n");
+	// printf("parsing line %s\n", str);
 
 	DataObjArray *final = malloc(sizeof(DataObjArray));
 	final->name = readString(str, &i);
@@ -141,8 +145,9 @@ DataObjArray *parseLineString(char *str, ssize_t strlen) {
 
 	final->mode = parseMode(str +i, &i);
 	// printf("mode: %d\n", final->mode);
-
-	final->list = parseParameters(str + i, strlen - i);
+	if (final->mode != SUB) {
+		final->list = parseParameters(str + i, strlen - i);
+	} // else list is undefined
 
 	final->dependency_table = NULL;
 	return final;
@@ -264,9 +269,11 @@ void freeTableStruct(void *data) {
 	// if (data == NULL) return;
 	DataObjArray *dataArr = (DataObjArray *)data;
 	free(dataArr->name);
-	if (dataArr->mode == VAR) free(dataArr->theme);
 
-	freeList(dataArr->list);
+	if (dataArr->mode != SUB) {
+		if (dataArr->mode == VAR) free(dataArr->theme);
+		freeList(dataArr->list);
+	}
 
 	if (dataArr->dependency_table != NULL) freeTableData((Data *)dataArr->dependency_table);
 	free(dataArr);
@@ -311,30 +318,65 @@ void freeDataObj(DataObj *data) {
 	freeDispatchTable[data->type](data->info);
 }
 
-void outList(void *data, FILE *fp) {
-	DataObjArray *dataobjarray = (DataObjArray *)data;
-	outputFunc *outDispatchTable[] = {outInt, outString, outVersion, outEmpty, outList};
-	const DataObj *arr = dataobjarray->list->arr;
-	int i, len = dataobjarray->len;
-	fputc('[', fp);
+
+
+// outputs List *
+void outList(List *list, FILE *fp) {
+	DataObj *arr = list->arr, *tmp;
+	int i, len = list->len;
+	TYPE type;
+	// fputc('[', fp);
 	for (i = 0; i < len - 1; i++) {
-		outDispatchTable[(&arr[i])->type]((&arr[i])->info, fp);
+		tmp = &arr[i];
+		type = tmp->type;
+		if (type == STRING) {
+			fputs((char *)tmp->info, fp);
+		// } else if (type == EMPTY) {
+		// 	does nothing
+		} else if (type == LIST) {
+			fputc('[', fp);
+			outList((List *)tmp->info, fp);
+			fputc(']', fp);
+		} // else not possible
 		fputc(';', fp);
 	}
-	outDispatchTable[(&arr[i])->type]((&arr[i])->info, fp);
-	fputc(']', fp);
+	tmp = &arr[i];
+	type = tmp->type;
+	if (type == STRING) {
+		fputs((char *)tmp->info, fp);
+	// } else if (type == EMPTY) {
+	// 	does nothing
+	} else if (type == LIST) {
+		fputc('[', fp);
+		outList((List *)tmp->info, fp);
+		fputc(']', fp);
+	} // else not possible
 }
 
-// kind of like outList except it runs first and doesnt print any '['
+// outputs entire DataObjArray *
 void outLine(DataObjArray *dataobjarray, FILE *fp) {
-	outputFunc *outDispatchTable[] = {outInt, outString, outVersion, outEmpty, outList};
-	const DataObj *arr = dataobjarray->list->arr;
-	int i, len = dataobjarray->len;
-	for (i = 0; i < len - 1; i++) {
-		outDispatchTable[(&arr[i])->type]((&arr[i])->info, fp);
-		fputc(';', fp);
+	outString(dataobjarray->name, fp);
+	putc(';', fp);
+	if (dataobjarray->mode == VAR) {
+		outVersion(dataobjarray->theme, fp);
+		putc(';', fp);
+		outString("show_var", fp);
+		putc(';', fp);
+		outList(dataobjarray->list, fp);
+	} else if (dataobjarray->mode == APPLY) {
+		outLongInt(dataobjarray->theme, fp);
+		putc(';', fp);
+		outString("apply", fp);
+		putc(';', fp);
+		outList(dataobjarray->list, fp);
+	} else {
+		outLongInt(dataobjarray->theme, fp);
+		putc(';', fp);
+		outString("show_sub", fp);
+		// not putc(';', fp), it should be empty after this
+		// sub also has no list (it is not necessarily null, shoudn't check it)
 	}
-	outDispatchTable[(&arr[i])->type]((&arr[i])->info, fp);
+
 	fputc('\n', fp);
 	if (dataobjarray->dependency_table != NULL) {
 		saveTableToFile(dataobjarray->dependency_table, dataobjarray->name);
@@ -351,6 +393,7 @@ void saveTableToFile(Data *data, char *name) {
 	char *key = NULL;
 	DataObjArray *current = NULL;
 
+
 	g_hash_table_iter_init (&iter, data->main_table);
 	while (g_hash_table_iter_next (&iter, (void **)&key, (void **)&current))
 	{
@@ -360,7 +403,7 @@ void saveTableToFile(Data *data, char *name) {
 	fclose(fp);
 }
 
-void outInt(void *data, FILE *fp) {
+void outLongInt(void *data, FILE *fp) {
 	char str[BUFFER_SIZE / 4];
 	snprintf(str, BUFFER_SIZE / 4, "%ld", (long int)(data));
 	fputs(str, fp);
