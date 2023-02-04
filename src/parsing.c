@@ -242,19 +242,33 @@ void freeNULL (void *data) {
 	return;
 }
 
+// will free list itself and the array
+void freeList(List *list) {
+	int i, len = list->len;
+	DataObj *arr = list->arr,
+	*tmp;
+	for (i = 0; i < len; i++) {
+		tmp = &arr[i];
+		if (tmp->type == STRING) { // is either string or list or empty
+			free(tmp->info);
+		} else if (tmp->type == LIST) {
+			freeList((List *)tmp->info);
+		} // else do nothing, it is empty
+	}
+	free(arr);
+	free(list);
+}
+
 // frees DataObjArray, NOT Data
 void freeTableStruct(void *data) {
 	// if (data == NULL) return;
 	DataObjArray *dataArr = (DataObjArray *)data;
-	DataObj *arr = dataArr->list->arr, *tmp; // what a mess
-	int i;
-	freeFunc *freeDispatchTable[] = {freeNULL, free, free, freeNULL, freeTableStruct};
-	for (i = 0; i < (const int)dataArr->len; i++) {
-		tmp = &arr[i];
-		freeDispatchTable[tmp->type](tmp->info);
-	}
+	free(dataArr->name);
+	if (dataArr->mode == VAR) free(dataArr->theme);
+
+	freeList(dataArr->list);
+
 	if (dataArr->dependency_table != NULL) freeTableData((Data *)dataArr->dependency_table);
-	free(arr);
 	free(dataArr);
 }
 
