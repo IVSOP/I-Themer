@@ -72,12 +72,15 @@ void varHandler(Data *data, char *info, int offset) {
 			DataObjArray *dataobjarray = (DataObjArray *)g_hash_table_lookup(data->main_table, info + offset);
 			info[j] = '(';
 			// theme<x>...
+			// why does this not call changeTheme ????
 			int new_theme = atoi(info + 5);
 			Theme *theme = (Theme *)(dataobjarray->theme);
-			// printf("changing theme from %d.%d to %d.%d\n", theme->big, theme->small, new_theme, (int)res);
-			theme->big = new_theme;
-			theme->small = (int)res;
-			// go back to before click
+			if (new_theme != theme->big || res != theme->small) {
+				// printf("changing theme from %d.%d to %d.%d\n", theme->big, theme->small, new_theme, (int)res);
+				theme->big = new_theme;
+				theme->small = (int)res;
+				// go back to before click
+			}
 			info[i] = '\0';
 			displayVar(data, info, offset);
 		} else { // .../<option>(2)/<option>(<m>) need to keep displaying options

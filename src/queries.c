@@ -15,8 +15,8 @@ void query0(Data *data, char *info) {
 		if (dataobjarray->mode == VAR) { // guaranteed to be string inside of list and has theme of type INT_VERSION
 			Theme *theme = (Theme *)dataobjarray->theme;
 			List *list = (&(dataobjarray->list->arr[theme->big]))->info;
-			printf("%s\n", (char *)((&(list->arr[theme->small]))->info));
-		} else { // can be string or list, and has theme of type INT
+			printf("%s\n", (char *)((&(list->arr[theme->small - 1]))->info));
+		} else { // can be string or list, and has theme of type INTt
 			long int theme = (long int) dataobjarray->theme;
 			DataObj *themeObj = &(dataobjarray->list->arr[theme]);
 			if (themeObj->type == STRING) {
