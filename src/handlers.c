@@ -28,23 +28,26 @@ void applyHandler(Data *data, char *info, int offset) {
 	// info[i] = '(';
 	// info is theme<x>/...
 	int theme = atoi(info + 5);
-	changeThemeApply(dataobjarray->list->arr, theme, data->active);
+	changeThemeApply(dataobjarray->list->arr, &dataobjarray->theme, theme, data->active);
 
 	// back to previous menu
 	int j;
 	// checks if nothing relevant happened
+	// info received is .../<option>(0)
+	// previous could be theme<x>/... or <option><x>/...
 	for (j = 0; info[j] != '/'; j++);
 	info[offset - 1] = '\0';
 	// can either be var or sub, never apply
 	// or it can be theme
 	if (j + 1 == offset) { // previous menu is just the menu of a theme
 		printThemeOptions(data, theme);
-	} else {
+	} else { // previous menu is either sub or var (for now sub does nothing, it is assumed whoever calls this displays hte options itself)
 		for (i = offset - 2; info[i] != '/'; i--);
-		if (info[offset - 3] - '\0' == SUB) { // sub
+		if (info[offset - 3] - '0' == SUB) { // sub
 			// crashing because it needs to go back to a data * that no longer exists. need to apply in sub.
 			// subHandler(data, info, i + 1);
 			// for now, this will do nothing, since the apply of the new theme is correct but the display of previous data isn't
+			return;
 		} else { // var
 			varHandler(data, info, i + 1);
 		}
@@ -70,7 +73,7 @@ void varHandler(Data *data, char *info, int offset) {
 			info[j] = '(';
 			// theme<x>...
 			int new_theme = atoi(info + 5);
-			Theme *theme = (Theme *)(getThemeObj(dataobjarray)->info);
+			Theme *theme = (Theme *)(dataobjarray->theme);
 			// printf("changing theme from %d.%d to %d.%d\n", theme->big, theme->small, new_theme, (int)res);
 			theme->big = new_theme;
 			theme->small = (int)res;
@@ -149,33 +152,31 @@ void applyAll(Data *data, int theme) {
 	char *key = NULL;
 	DataObjArray *current = NULL;
 	char mode;
-	DataObj *tmp;
 
 	int *active = data->active, old_theme, new_theme;
 
 	g_hash_table_iter_init (&iter, data->main_table);
 	while (g_hash_table_iter_next (&iter, (void **)&key, (void **)&current))
 	{
-		tmp = &(current->list->arr[2]);
+
 		mode = current->mode;
 		switch (mode) {
 			case APPLY: // apply
-				changeThemeApply(current->list->arr, theme, active);
+				changeThemeApply(current->list->arr, &current->theme, theme, active);
 				break;
 			case VAR: // var
-				changeThemeVar(current->list->arr, theme, 1, active);
+				changeThemeVar(current->list->arr, current->theme, theme, 1, active);
 				break;
 			case SUB: // sub
 				// applies to all in subtable, then changes the theme to whatever the new most used theme is
 				// also updates data->active[]
 				applyAll(current->dependency_table, theme);
-				tmp = getThemeObj(current);
-				old_theme = (long int)tmp->info;
+				old_theme = (long int)current->theme;
 				new_theme = getMostUsed(current->dependency_table);
 				// if (old_theme != new_theme) {
 				data->active[old_theme] -= 1;
 				data->active[new_theme] += 1;
-				tmp->info = (void *) ((long int)new_theme);
+				current->theme = (void *) ((long int)new_theme);
 				// }
 				break;
 		}
@@ -188,29 +189,25 @@ void applyAll(Data *data, int theme) {
 	active[i] = max;
 }
 
-void changeThemeApply(DataObj *arr, int theme, int *active) {
-	DataObj *themeObj = &arr[1], *infoObj = &arr[3 + theme];
-	int old_theme = (long int)themeObj->info;
-	if (old_theme != theme) {
+void changeThemeApply(DataObj *arr, void **old_theme, int theme, int *active) {
+	DataObj *infoObj = &arr[*(long int *)old_theme];
+	if (*(long int *)old_theme != theme) {
 		if (infoObj->type != EMPTY) {
-			themeObj->info = (void *)((long int)theme);
-			active[old_theme] -= 1;
+			active[*(long int *)old_theme] -= 1;
 			active[theme] += 1;
+			*old_theme = (void *)((long int)theme);
 		}
 	}
 }
 
-void changeThemeVar(DataObj *arr, int big, int small, int *active) {
-	DataObjArray idk; List idklist;
-	idklist.arr = arr;
-	idk.list = &idklist;
-
-	DataObj *themeObj = getThemeObj(&idk), *infoObj = &arr[big + 3];
-	Theme *old_theme = (Theme *)themeObj->info;
+// used to receive DataObj, now has to just receive old theme (change from x to y)
+void changeThemeVar(DataObj *arr, Theme *old_theme, int big, int small, int *active) {
 	// printf("%d %d %d %d\n", old_theme->big, big, old_theme->small, small);
 	if (old_theme->big != big || old_theme->small != small) {
+		DataObj *infoObj = &arr[big];
 		if (infoObj->type != EMPTY) {
-			infoObj = &(((DataObjArray *)infoObj->info)->list->arr[small - 1]);
+			List *list = (List *)infoObj->info;
+			infoObj = &(list->arr[small - 1]);
 			if (infoObj->type != EMPTY) {
 				old_theme->big = big;
 				old_theme->small = small;

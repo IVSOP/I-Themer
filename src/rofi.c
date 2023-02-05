@@ -48,7 +48,7 @@ int mainRofiLoop(char *input) {
 
 	// dumpTable(data, 0);
 
-	// inputHandler(data, input);
+	inputHandler(data, input);
 
 	saveTableToFile(data, "table"); // this is inneficient, but it is the only way. doing it on applyHandler would break when data is actually a subtable and not a main table
 	freeTableData(data);

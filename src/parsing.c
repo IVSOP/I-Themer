@@ -354,6 +354,7 @@ void outList(List *list, FILE *fp) {
 }
 
 // outputs entire DataObjArray *
+// kind of a mess but works
 void outLine(DataObjArray *dataobjarray, FILE *fp) {
 	outString(dataobjarray->name, fp);
 	putc(';', fp);
@@ -458,8 +459,4 @@ inline int getMostUsed(Data *data) {
 
 inline int getTableSize(Data *data) {
 	return g_hash_table_size(data->main_table);
-}
-
-inline DataObj * getThemeObj(DataObjArray *dataobjarray) {
-	return &(dataobjarray->list->arr[1]);
 }

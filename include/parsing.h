@@ -54,8 +54,6 @@ struct DataObjArray {
 	Mode mode;
 	void *theme;
 	List *list;
-	DataObj *arr;
-	int len; // number of fiels so I know how many to free
 	Data * dependency_table;
 };
 
@@ -92,7 +90,6 @@ int getActivePerTheme(Data *data, int theme);
 int getThemeBig(DataObj *themeobj);
 int getMostUsed(Data *data);
 int getTableSize(Data *data);
-DataObj * getThemeObj(DataObjArray *dataobjarray);
 
 //freeing
 void freeTableData(Data *data);

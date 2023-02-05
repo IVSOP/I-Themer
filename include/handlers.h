@@ -12,7 +12,7 @@ void subHandler(Data *data, char *info, int offset);
 void allHandler(Data *data, char *info, int offset);
 void applyAll(Data *data, int theme);
 
-void changeThemeApply(DataObj *arr, int theme, int *active);
-void changeThemeVar(DataObj *arr, int big, int small, int *active);
+void changeThemeApply(DataObj *arr, void **old_theme, int theme, int *active);
+void changeThemeVar(DataObj *arr, Theme *old_theme, int big, int small, int *active);
 
 #endif

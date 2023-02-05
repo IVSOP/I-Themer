@@ -6,7 +6,6 @@ void displaySubWithoutDep(Data *data, char *str, int offset) {
 	GHashTableIter iter;
 	char *key = NULL;
 	DataObjArray *current = NULL;
-	// DataObj *arr;
 
 	// output format: .../<option>(1)/<option>(<m>)
 	int theme, active[g_hash_table_size(data->main_table)], original_theme = atoi(str + 5), i;
@@ -25,12 +24,11 @@ void displaySubWithoutDep(Data *data, char *str, int offset) {
 
 	for (i = 0; g_hash_table_iter_next (&iter, (void **)&key, (void **)&current); i++)
 	{
-		// arr = current->list->arr;
 		mode = current->mode;
 		infostr = current->name;
 		// assume it can only be int or int_version
 		// check mode instead of type???
-		theme =	(getThemeObj(current)->type == INT) ? (int)((long int)(getThemeObj(current)->info)) : ((Theme *)(getThemeObj(current)->info))->big;
+		theme =	(mode == VAR) ? (((Theme *)(current->theme))->big) : (int)((long int)(current->theme));
 		active[i] = theme == original_theme ? 1 : 0;
 		printf("%s", infostr);
 		SEP1;
@@ -63,6 +61,7 @@ void displaySubWithoutDep(Data *data, char *str, int offset) {
 
 // input format: .../<option>(2)/...
 // output format: <original info>/<option number>
+// displays list contained in list->arr[theme]
 void displayVar(Data *data, char *str, int offset) {
 	int i;
 	for (i = offset; str[i] != '('; i++);
@@ -73,10 +72,10 @@ void displayVar(Data *data, char *str, int offset) {
 	
 	// NOTE: For now, it is assumed that show_var is used with lists, whose items should be applied
 	// no error checking is performed besides empty list
-	Theme *original_theme = (Theme *)(getThemeObj(dataobjarray)->info);
-	DataObjArray *list = (DataObjArray *)((&dataobjarray->list->arr[theme + 3])->info);
-	// check for empty can either be type == EMPTY or info == NULL
-	if (list == NULL) {
+	// assumed it is of type Theme *
+	Theme *original_theme = (Theme *)(dataobjarray->theme);
+	DataObj *themeObj = &(dataobjarray->list->arr[theme]);
+	if (themeObj->type == EMPTY) {
 		printf("List is empty");
 		SEP1;
 		printf("info");
@@ -85,6 +84,11 @@ void displayVar(Data *data, char *str, int offset) {
 		printf("%s\n", str); //same as pressing "Back"
 		return;
 	}
+	//else
+
+	List *list = (List *)(themeObj->info);
+	// check for empty can either be type == EMPTY or info == NULL
+
 	DataObj *arr = list->arr, *current;
 	int len = list->len;
 
@@ -148,7 +152,6 @@ void displaySub(Data *data, char *str, int offset) {
 	GHashTableIter iter;
 	char *key = NULL;
 	DataObjArray *current = NULL;
-	// DataObj *arr;
 
 	// output format: .../<option>(1)/<option>(<m>)
 	int theme, active[g_hash_table_size(dep->main_table)], original_theme = atoi(str + 5);
@@ -167,11 +170,9 @@ void displaySub(Data *data, char *str, int offset) {
 
 	for (i = 0; g_hash_table_iter_next (&iter, (void **)&key, (void **)&current); i++)
 	{
-		// arr = current->list->arr;
 		mode = current->mode;
 		infostr = current->name;
-		// assume it can only be int or int_version
-		theme =	(getThemeObj(current)->type == INT) ? (int)((long int)(getThemeObj(current)->info)) : ((Theme *)(getThemeObj(current)->info))->big;
+		theme =	(mode == VAR) ? (((Theme *)(current->theme))->big) : (int)((long int)(current->theme));
 		active[i] = theme == original_theme ? 1 : 0;
 		printf("%s", infostr);
 		SEP1;
@@ -238,10 +239,10 @@ void generateThemeOptions(Data *data, int selected_theme) {
 		// if (i == 2) {
 			// arr = current->list->arr;
 			mode = current->mode;
-			if (getThemeObj(current)->type == INT) {	
-				theme = (int)((long int)(getThemeObj(current)->info));
-			} else { // INT_VERSION
-				theme = ((Theme *)getThemeObj(current)->info)->big;
+			if (mode == VAR) {	
+				theme = ((Theme *)current->theme)->big;
+			} else {
+				theme = (int)((long int)(current->theme));
 			}
 			printf("%s", key);
 			if (mode == SUB) { // sub

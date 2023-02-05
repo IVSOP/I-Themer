@@ -1,0 +1,9 @@
+theme0
+theme1/dunst(0)
+theme2/polybar(1)
+theme2/polybar(1)/bar(0)
+theme0/polybar(1)/bar(0)
+theme0/polybar(1)/All(3)
+theme1/All(3)
+theme2/background(2)/10
+theme0/background(2)/1
