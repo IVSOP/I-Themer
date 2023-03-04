@@ -1,5 +1,5 @@
 *.o
-themer*
+ithemer*
 .vscode*
 build/
 data/*

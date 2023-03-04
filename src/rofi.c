@@ -17,24 +17,27 @@ void inputHandler(Data *data, char *input) {
 		strcpy(input2, input); // same explanation as bellow
 
 		queryHandler(data, input2);
-	} else if (original_info == NULL) { // ""
-		printMainOptions(data);
 	} else {
-		// when varHandler calls displayVar, what happens if string overflows????????
-		// info used big alloca just to be safe
-		char *info = alloca(sizeof(char) * INFO_SIZE);
-		strcpy(info, original_info);
+		if (original_info == NULL) { // ""
+			printMainOptions(data);
+		} else {
+			// when varHandler calls displayVar, what happens if string overflows????????
+			// info used big alloca just to be safe
+			char *info = alloca(sizeof(char) * INFO_SIZE);
+			strcpy(info, original_info);
 
-		int i;
-		for (i = 0; info[i] != '\0' && info[i] != '/'; i++);
-		if (info[i] == '\0') { // "theme<x>"
-			printThemeOptions(data, atoi(info + 5));
-		} else { // "theme<x>/option(<m>)/..." m can be 0(apply), 1(show_sub) or 2(show_var) 0=0  1=115 2=118 so just /59
-			int j;
-			for (j = i + 1; info[j] != '('; j++);
-			handlerFunc *handlers[] = {applyHandler, subHandler, varHandler, allHandler};
-			handlers[info[j + 1] - '0'](data, info, i + 1);
+			int i;
+			for (i = 0; info[i] != '\0' && info[i] != '/'; i++);
+			if (info[i] == '\0') { // "theme<x>"
+				printThemeOptions(data, atoi(info + 5));
+			} else { // "theme<x>/option(<m>)/..." m can be 0(apply), 1(show_sub) or 2(show_var) 0=0  1=115 2=118 so just /59
+				int j;
+				for (j = i + 1; info[j] != '('; j++);
+				handlerFunc *handlers[] = {applyHandler, subHandler, varHandler, allHandler};
+				handlers[info[j + 1] - '0'](data, info, i + 1);
+			}
 		}
+		saveTableToFile(data, "table");
 	}
 }
 
@@ -50,7 +53,6 @@ int mainRofiLoop(char *input) {
 
 	inputHandler(data, input);
 
-	saveTableToFile(data, "table"); // this is inneficient, but it is the only way. doing it on applyHandler would break when data is actually a subtable and not a main table
 	freeTableData(data);
 	g_ptr_array_free(colorArr, TRUE);
 	fclose(fp);
