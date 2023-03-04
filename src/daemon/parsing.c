@@ -180,7 +180,7 @@ inline int getThemeBig(DataObj *themeobj) {
 }
 
 // returns NULL on EOF
-Data *parseMainTable(FILE *fp, GPtrArray *colorArr) {
+Data *parseMainTable(FILE *fp, GPtrArray *colorArr, char *dir) {
 	Data *data = malloc(sizeof(Data));
 	int *active = calloc((colorArr->len + 1), sizeof(int));
 	data->active = active;
@@ -198,10 +198,10 @@ Data *parseMainTable(FILE *fp, GPtrArray *colorArr) {
 			if (lineData->mode == SUB) { // mode is sub, needs its dependencies resolved
 				current_theme = (long int)lineData->theme;
 				char str[BUFFER_SIZE];
-				snprintf(str, BUFFER_SIZE, "%s/%s.tb", TABLE_PATH, lineData->name);
+				snprintf(str, BUFFER_SIZE, "%s/%s.tb", dir, lineData->name);
 				FILE *fp2 = fopen(str, "r");
 				CHECK_FILE_ERROR(fp2)
-				lineData->dependency_table = parseMainTable(fp2, colorArr);
+				lineData->dependency_table = parseMainTable(fp2, colorArr, dir);
 				fclose(fp2);
 				// need to update current selected theme, based on the most used theme
 				// is sub, so can be sure it is an INT and not INT_VERSION
@@ -355,7 +355,7 @@ void outList(List *list, FILE *fp) {
 
 // outputs entire DataObjArray *
 // kind of a mess but works
-void outLine(DataObjArray *dataobjarray, FILE *fp) {
+void outLine(DataObjArray *dataobjarray, FILE *fp, char *dir) {
 	outString(dataobjarray->name, fp);
 	putc(';', fp);
 	if (dataobjarray->mode == VAR) {
@@ -380,13 +380,13 @@ void outLine(DataObjArray *dataobjarray, FILE *fp) {
 
 	fputc('\n', fp);
 	if (dataobjarray->dependency_table != NULL) {
-		saveTableToFile(dataobjarray->dependency_table, dataobjarray->name);
+		saveTableToFile(dataobjarray->dependency_table, dataobjarray->name, dir);
 	}
 }
 
-void saveTableToFile(Data *data, char *name) {
+void saveTableToFile(Data *data, char *name, char *dir) {
 	char str[BUFFER_SIZE];
-	snprintf(str, BUFFER_SIZE, "%s/%s.tb", TABLE_PATH, name);
+	snprintf(str, BUFFER_SIZE, "%s/%s.tb", dir, name);
 	FILE *fp = fopen(str, "w");
 	CHECK_FILE_ERROR(fp);
 
@@ -398,7 +398,7 @@ void saveTableToFile(Data *data, char *name) {
 	g_hash_table_iter_init (&iter, data->main_table);
 	while (g_hash_table_iter_next (&iter, (void **)&key, (void **)&current))
 	{
-		outLine(current, fp);
+		outLine(current, fp, dir);
 	}
 
 	fclose(fp);
@@ -426,10 +426,10 @@ void outEmpty(void *data, FILE *fp) {
 	return;
 }
 
-GPtrArray *parseColors(char *name) {
+GPtrArray *parseColors(char *name, char *dir) {
 	GPtrArray *arr = g_ptr_array_new_full(3, free);
 	char str[BUFFER_SIZE];
-	snprintf(str, BUFFER_SIZE, "%s/%s", TABLE_PATH, name); // not .tb??
+	snprintf(str, BUFFER_SIZE, "%s/%s", dir, "color-icons");
 	FILE *fp = fopen(str, "r");
 	CHECK_FILE_ERROR(fp);
 	char *res = NULL;

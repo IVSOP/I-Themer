@@ -1,101 +1,145 @@
-TARGET_EXEC := ithemer
-DEBUG_EXEC := ithemer-debug
-TEST_EXEC := ithemer-tests
-TEST_DEBUG_EXEC := ithemer-debug-tests
+BIN_DIR := bin
+
+TARGET_EXEC_DAEMON := $(BIN_DIR)/ithemer-daemon
+TARGET_EXEC_MENU := $(BIN_DIR)/ithemer-menu
+TARGET_EXEC_QUERY := $(BIN_DIR)/ithemer-query
+
+DEBUG_EXEC_MENU := $(BIN_DIR)/ithemer-debug-menu
+DEBUG_EXEC_DAEMON := $(BIN_DIR)/ithemer-debug-daemon
+DEBUG_EXEC_QUERY := $(BIN_DIR)/ithemer-debug-query
 
 BASE_BUILD_DIR := build
-BUILD_DIR := $(BASE_BUILD_DIR)/obj
-DEBUG_BUILD_DIR := $(BASE_BUILD_DIR)/obj_debug
-SRC_DIR := src
-INC_DIR := include
-TEST_BUILD_DIR := $(BASE_BUILD_DIR)/tests
-TEST_SRC_DIR := $(SRC_DIR)/tests
-TEST_INC_DIR := $(INC_DIR)/tests
-TEST_DEBUG_BUILD_DIR := $(BASE_BUILD_DIR)/tests_debug
+BUILD_DIR_MENU := $(BASE_BUILD_DIR)/obj/menu
+BUILD_DIR_DAEMON := $(BASE_BUILD_DIR)/obj/daemon
+BUILD_DIR_QUERY := $(BASE_BUILD_DIR)/obj/query
+
+DEBUG_BUILD_DIR_MENU := $(BASE_BUILD_DIR)/obj_debug/menu
+DEBUG_BUILD_DIR_DAEMON := $(BASE_BUILD_DIR)/obj_debug/daemon
+DEBUG_BUILD_DIR_QUERY := $(BASE_BUILD_DIR)/obj_debug/query
+
+SRC_DIR_MENU := src/menu
+SRC_DIR_DAEMON := src/daemon
+SRC_DIR_QUERY := src/query
+
+INC_DIR_MENU := include/menu
+INC_DIR_DAEMON := include/daemon
+INC_DIR_QUERY := include/query
 
 CC := gcc
 
 GLIBFLAGS := $(shell pkg-config --cflags --libs gobject-2.0)
-STD_FLAGS := -I$(INC_DIR) $(GLIBFLAGS) -Wall -Wextra -pedantic -Wno-unused-parameter $(PROFILING_OPTS) # -lm -pthread -Wconversion
-CFLAGS := -O2 $(STD_FLAGS)
-DEBUG_FLAGS := -O0 -g3 $(STD_FLAGS) #-ggdb3
+STD_FLAGS := $(GLIBFLAGS) -Wall -Wextra -pedantic -Wno-unused-parameter $(PROFILING_OPTS) # -lm -pthread -Wconversion
+MENU_FLAGS := -O2 -I$(INC_DIR_MENU) $(STD_FLAGS)
+DAEMON_FLAGS := -O2 -I$(INC_DIR_DAEMON) $(STD_FLAGS)
+QUERY_FLAGS := -O2 -I$(INC_DIR_QUERY) $(STD_FLAGS)
+
+# CFLAGS := -O2 $(STD_FLAGS)
+
+DEBUG_FLAGS_MENU := -O0 -g3 $(MENU_FLAGS) #-ggdb3
+DEBUG_FLAGS_DAEMON := -O0 -g3 $(DAEMON_FLAGS)
+DEBUG_FLAGS_QUERY := -O0 -g3 $(QUERY_FLAGS)
+
 LDFLAGS := $(PROFILING_OPTS)
 
-# get .c files, remove original path and turn into .o
-SRCS_ALL := $(shell ls $(SRC_DIR) | grep '.c')
+# is there a better way to do this?????????????
+SRC_MENU := $(shell ls $(SRC_DIR_MENU) | grep '.c')
+OBJ_MENU := $(subst .c,.o,$(SRC_MENU))
+OBJ_DEBUG_MENU := $(OBJ_MENU:%=$(DEBUG_BUILD_DIR_MENU)/%)
+OBJ_MENU := $(OBJ_MENU:%=$(BUILD_DIR_MENU)/%)
 
-# gets files common between tests and src to avoid conflicts
-REPETITIONS := $(shell ./Scripts/get_file_repetitions.sh $(SRC_DIR) $(TEST_SRC_DIR))
-OBJ_WITHOUT_REPETITIONS := $(subst .c,.o,$(filter-out $(REPETITIONS), $(SRCS_ALL)))
+SRC_DAEMON := $(shell ls $(SRC_DIR_DAEMON) | grep '.c')
+OBJ_DAEMON := $(subst .c,.o,$(SRC_DAEMON))
+OBJ_DEBUG_DAEMON := $(OBJ_DAEMON:%=$(DEBUG_BUILD_DIR_DAEMON)/%)
+OBJ_DAEMON := $(OBJ_DAEMON:%=$(BUILD_DIR_DAEMON)/%)
 
-SRCS_DEBUG := $(SRCS_ALL)
-
-SRCS_TEST := $(shell ls $(TEST_SRC_DIR) | grep '.c')
-
-SRCS_TEST_DEBUG := $(SRCS_TEST)
-
-OBJS_ALL := $(subst .c,.o,$(SRCS_ALL))
-OBJS_ALL := $(OBJS_ALL:%=$(BUILD_DIR)/%)
-
-OBJS_DEBUG := $(subst .c,.o,$(SRCS_DEBUG))
-OBJS_DEBUG := $(OBJS_DEBUG:%=$(DEBUG_BUILD_DIR)/%)
-
-OBJS_TEST := $(subst .c,.o,$(SRCS_TEST))
-OBJS_TEST := $(OBJS_TEST:%=$(TEST_BUILD_DIR)/%) $(OBJ_WITHOUT_REPETITIONS:%=$(BUILD_DIR)/%) # $(filter-out $(REPETITIONS), $(OBJS_ALL)) #$(TEST_BUILD_DIR)/main.o $(TEST_BUILD_DIR)/test_header.o
-
-OBJS_DEBUG_TEST := $(subst .c,.o,$(SRCS_TEST_DEBUG))
-OBJS_DEBUG_TEST := $(OBJS_DEBUG_TEST:%=$(TEST_DEBUG_BUILD_DIR)/%) $(OBJ_WITHOUT_REPETITIONS:%=$(DEBUG_BUILD_DIR)/%)
+SRC_QUERY := $(shell ls $(SRC_DIR_QUERY) | grep '.c')
+OBJ_QUERY := $(subst .c,.o,$(SRC_QUERY))
+OBJ_DEBUG_QUERY := $(OBJ_QUERY:%=$(DEBUG_BUILD_DIR_QUERY)/%)
+OBJ_QUERY := $(OBJ_QUERY:%=$(BUILD_DIR_QUERY)/%)
 
 
 # make .d
-DEPS := $(OBJS_ALL:.o=.d) $(OBJS_DEBUG:.o=.d) $(OBJS_TEST:.o=.d)
+DEPS := $(OBJ_MENU:.o=.d) $(OBJ_DAEMON:.o=.d) $(OBJ_DEBUG_MENU:.o=.d) $(OBJ_DEBUG_DAEMON:.o=.d)
 
 CPPFLAGS := -MMD -MP
 
-# all??
 .PHONY: all
-all: $(TARGET_EXEC)
+all: daemon menu query
 
-$(TARGET_EXEC): $(OBJS_ALL)
-	$(CXX) $(OBJS_ALL) $(GLIBFLAGS) -o $@ $(LDFLAGS)
+.PHONY: daemon
+daemon: $(TARGET_EXEC_DAEMON)
+
+$(TARGET_EXEC_DAEMON): $(OBJ_DAEMON)
+	mkdir -p $(dir $@)
+	$(CXX) $(OBJ_DAEMON) $(GLIBFLAGS) -o $@ $(LDFLAGS)
+
+$(BUILD_DIR_DAEMON)/%.o: $(SRC_DIR_DAEMON)/%.c
+	mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(DAEMON_FLAGS) -c $< -o $@
+
+.PHONY: menu
+menu: $(TARGET_EXEC_MENU)
+
+$(TARGET_EXEC_MENU): $(OBJ_MENU)
+	mkdir -p $(dir $@)
+	$(CXX) $(OBJ_MENU) $(GLIBFLAGS) -o $@ $(LDFLAGS)
+
+# will the mkdir not get repeated?????
+$(BUILD_DIR_MENU)/%.o: $(SRC_DIR_MENU)/%.c
+	mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(MENU_FLAGS) -c $< -o $@
+
+.PHONY: query
+query: $(TARGET_EXEC_QUERY)
+
+$(TARGET_EXEC_QUERY): $(OBJ_QUERY)
+	mkdir -p $(dir $@)
+	$(CXX) $(OBJ_QUERY) $(GLIBFLAGS) -o $@ $(LDFLAGS)
 
 # C source
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+$(BUILD_DIR_QUERY)/%.o: $(SRC_DIR_QUERY)/%.c
 	mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+	$(CC) $(CPPFLAGS) $(QUERY_FLAGS) -c $< -o $@
+
 
 .PHONY: debug
-debug: $(DEBUG_EXEC)
+debug: debug-menu debug-daemon debug-query
 
-$(DEBUG_EXEC): $(OBJS_DEBUG)
-	$(CXX) $(OBJS_DEBUG) $(GLIBFLAGS) -o $@ $(LDFLAGS)
+.PHONY: debug-menu
+debug-menu: $(DEBUG_EXEC_MENU)
 
-$(DEBUG_BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+$(DEBUG_EXEC_MENU): $(OBJ_DEBUG_MENU)
 	mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) $(DEBUG_FLAGS) -c $< -o $@
+	$(CXX) $(OBJ_DEBUG_MENU) $(GLIBFLAGS) -o $@ $(LDFLAGS)
 
-.PHONY: tests
-tests: $(TEST_EXEC) all
-
-$(TEST_EXEC): $(OBJS_TEST)
-	$(CXX) $(OBJS_TEST) $(GLIBFLAGS) -o $@ $(LDFLAGS)
-
-$(TEST_BUILD_DIR)/%.o: $(TEST_SRC_DIR)/%.c
+$(DEBUG_BUILD_DIR_MENU)/%.o: $(SRC_DIR_MENU)/%.c
 	mkdir -p $(dir $@)
-	$(CC) -I$(TEST_INC_DIR) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+	$(CC) $(CPPFLAGS) $(DEBUG_FLAGS_MENU) -c $< -o $@
 
-.PHONY: tests_debug
-tests_debug: $(TEST_DEBUG_EXEC) debug
+.PHONY: debug-daemon
+debug-daemon: $(DEBUG_EXEC_DAEMON)
 
-$(TEST_DEBUG_EXEC): $(OBJS_DEBUG_TEST)
-	$(CXX) $(OBJS_DEBUG_TEST) $(GLIBFLAGS) -o $@ $(LDFLAGS)
-
-$(TEST_DEBUG_BUILD_DIR)/%.o: $(TEST_SRC_DIR)/%.c
+$(DEBUG_EXEC_DAEMON): $(OBJ_DEBUG_DAEMON)
 	mkdir -p $(dir $@)
-	$(CC) -I$(TEST_INC_DIR) $(CPPFLAGS) $(DEBUG_FLAGS) -c $< -o $@
+	$(CXX) $(OBJ_DEBUG_DAEMON) $(GLIBFLAGS) -o $@ $(LDFLAGS)
+
+$(DEBUG_BUILD_DIR_DAEMON)/%.o: $(SRC_DIR_DAEMON)/%.c
+	mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(DEBUG_FLAGS_DAEMON) -c $< -o $@
+
+.PHONY: debug-query
+debug-query: $(DEBUG_EXEC_QUERY)
+
+$(DEBUG_EXEC_QUERY): $(OBJ_DEBUG_QUERY)
+	mkdir -p $(dir $@)
+	$(CXX) $(OBJ_DEBUG_QUERY) $(GLIBFLAGS) -o $@ $(LDFLAGS)
+
+$(DEBUG_BUILD_DIR_QUERY)/%.o: $(SRC_DIR_QUERY)/%.c
+	mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(DEBUG_FLAGS_QUERY) -c $< -o $@
 
 .PHONY: clean
-RM_DIRS := $(BASE_BUILD_DIR) $(TARGET_EXEC) $(DEBUG_EXEC) $(TEST_EXEC) $(TEST_DEBUG_EXEC)
+RM_DIRS := $(BASE_BUILD_DIR) $(BIN_DIR)
 RED := \033[0;31m
 NC := \033[0m
 clean:

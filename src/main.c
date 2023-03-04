@@ -5,13 +5,10 @@
 
 int main (int argc, char **argv) {
 	// arg 1: database location
+
 	if (chdir(getenv("HOME")) == -1) {
 		printf("Error in cd home\n");
 		exit(1);
-	}
-	if (argc == 0) {
-		printf("Not enough args\n");
-		return 1;
 	}
 
 	if (argc == 0) return mainRofiLoop(NULL);

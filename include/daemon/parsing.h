@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <glib.h>
 
-#define BUFFER_SIZE 64
+#define BUFFER_SIZE 256
 #define LINE_STR_SIZE 256
 #define DATA_BUFF_SIZE 64
 
@@ -63,20 +63,22 @@ struct Theme {
 
 typedef void freeFunc(void *);
 
-void saveTableToFile(Data *data, char *name);
+void saveTableToFile(Data *data, char *name, char *dir);
 
 #define CHECK_FILE_ERROR(fp) {\
 	if (fp == NULL) {\
-		fprintf(stderr, "Error opening file, exiting\n");\
+		char _message[64];\
+		snprintf(_message, 64, "Error opening file in %s, exiting\n", __func__);\
+		perror(_message);\
 		exit(1);\
 	}\
 }
 
 //parsing
-Data *parseMainTable(FILE *fp, GPtrArray *colorArr);
+Data *parseMainTable(FILE *fp, GPtrArray *colorArr, char *dir);
 char *readString(char *str, int *len);
 DataObjArray *parseLine(FILE *fp);
-GPtrArray *parseColors(char *name);
+GPtrArray *parseColors(char *name, char *dir);
 
 //getters
 GHashTable *getTable(Data *data);
