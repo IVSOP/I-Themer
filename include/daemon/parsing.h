@@ -8,10 +8,10 @@
 #define LINE_STR_SIZE 256
 #define DATA_BUFF_SIZE 64
 #define INFO_SIZE 1024
-#define STR_RESULT_SIZE INFO_SIZE - sizeof(int)
+#define STR_RESULT_SIZE INFO_SIZE - sizeof(unsigned int)
 
 typedef struct {
-	int len;
+	unsigned int len;
 	char str[STR_RESULT_SIZE];
 } OUT_STRING;
 

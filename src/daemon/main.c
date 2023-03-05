@@ -68,6 +68,10 @@ void messageHandler(char *buffer, OUT_STRING *res) {
 	case 'm':
 		menuHandler(data, buffer + 2, res);
 		break;
+
+	case 'k': // kill
+		sigterm_handler(SIGTERM);
+		break;
 	
 	default:
 		exit(EXIT_FAILURE);
@@ -134,38 +138,38 @@ int main (int argc, char **argv) {
 
 	//////////////////////////////////////////////// creating daemon
 
-	// pid_t pid, sid;
+	pid_t pid, sid;
 
-    // // Fork the process
-    // pid = fork();
+    // Fork the process
+    pid = fork();
 
-    // if (pid < 0) {
-    //     exit(EXIT_FAILURE);
-    // }
+    if (pid < 0) {
+        exit(EXIT_FAILURE);
+    }
 
-    // if (pid > 0) {
-    //     // Parent process
-    //     exit(EXIT_SUCCESS);
-    // }
+    if (pid > 0) {
+        // Parent process
+        exit(EXIT_SUCCESS);
+    }
 
-    // // Set file mode creation mask to 0
-    // umask(0);
+    // Set file mode creation mask to 0
+    umask(0);
 
-    // // Create a new session
-    // sid = setsid();
-    // if (sid < 0) {
-    //     exit(EXIT_FAILURE);
-    // }
+    // Create a new session
+    sid = setsid();
+    if (sid < 0) {
+        exit(EXIT_FAILURE);
+    }
 
-    // // Change the working directory to root
-    // if (chdir("/") < 0) {
-    //     exit(EXIT_FAILURE);
-    // }
+    // Change the working directory to root
+    if (chdir("/") < 0) {
+        exit(EXIT_FAILURE);
+    }
 
-    // // Close standard file descriptors
-    // close(STDIN_FILENO);
-    // close(STDOUT_FILENO);
-    // close(STDERR_FILENO);
+    // Close standard file descriptors
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
 
 	//////////////////////////////////////////////// listen for requests on the socket
 
@@ -179,16 +183,17 @@ int main (int argc, char **argv) {
 		}
 		// reset since it is reused
 		message->len = 0;
+
 		valread = read(client_fd, buffer, STR_RESULT_SIZE - 1);
 		if (valread) {
 			buffer[valread] = '\0';
-			printf("Received %s, calling handler\n", buffer);
+			// printf("Received %s, calling handler\n", buffer);
 			messageHandler(buffer, message);
-			printf("Final message is:\n");
-			fflush(stdout);
-			write(STDOUT_FILENO, message->str, message->len);
-			// send(client_fd, message->str, message->len + 1, 0);
-			return 0;
+			// printf("Final message is:\n");
+			// fflush(stdout);
+			// write(STDOUT_FILENO, message->str, message->len);
+			send(client_fd, message->str, message->len, 0);
+			// sigterm_handler(SIGTERM);
 		}
     }
 

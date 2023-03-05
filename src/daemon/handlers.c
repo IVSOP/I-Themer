@@ -17,7 +17,7 @@ void queryHandler(Data *data, char *info, OUT_STRING *res) {
 	query0(data, endptr + 1, res); // skip numbers and '/'
 }
 
-// input format: <theme>/<option>(<mode>)/...
+// input format: theme<theme>/<option>(<mode>)/...
 void menuHandler(Data *data, char *original_info, OUT_STRING *res) {
 	if (original_info[0] == '\0') { // ""
 		printMainOptions(data, res);
@@ -30,7 +30,7 @@ void menuHandler(Data *data, char *original_info, OUT_STRING *res) {
 		int i;
 		for (i = 0; info[i] != '\0' && info[i] != '/'; i++);
 		if (info[i] == '\0') { // "theme<x>"
-			printThemeOptions(data, atoi(info), res);
+			printThemeOptions(data, atoi(info + 5), res); // +5 because it starts with theme
 		} else { // "theme<x>/option(<m>)/..." m can be 0(apply), 1(show_sub) or 2(show_var
 			int j;
 			for (j = i + 1; info[j] != '('; j++);

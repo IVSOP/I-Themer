@@ -18,17 +18,20 @@ void outList(List *list, FILE *fp);
 
 // concatenates string 'str' into the output string
 inline void outStringBuilder(OUT_STRING *res, char *str) {
+	res->len += stpncpy(res->str + res->len, str, STR_RESULT_SIZE - 1 - res->len) - (res->str + res->len);
 	// check bounds since I believe it is likely that they can be surpassed
-	res->len += stpncpy(res->str + res->len, str, STR_RESULT_SIZE - 1) - (res->str + res->len);
-	if (res->len >= STR_RESULT_SIZE) {
-		printf("String size not enough");
-		exit(EXIT_FAILURE);
-	}
-	// printf("Written %s, final len is now %d\n", str, res->len);
+	// if (res->len >= STR_RESULT_SIZE) {
+	// 	printf("String size not enough");
+	// 	exit(EXIT_FAILURE);
+	// }
 }
 
 inline void outAddChar(OUT_STRING *res, char chr) {
 	res->str[res->len++] = chr;
+	// if (res->len >= STR_RESULT_SIZE) {
+	// 	printf("String size not enough");
+	// 	exit(EXIT_FAILURE);
+	// }
 }
 
 char *readString(char *str, int *len) {
