@@ -16,6 +16,15 @@ void outVersion(void*data, FILE *fp);
 void outEmpty(void*data, FILE *fp);
 void outList(List *list, FILE *fp);
 
+// concatenates string 'str' into the output string
+inline void outStringBuilder(OUT_STRING *res, char *str) {
+	res->len += stpncpy(res->str + res->len, str, STR_RESULT_SIZE - 1) - res->str + res->len;
+}
+
+inline void outAddChar(OUT_STRING *res, char chr) {
+	res->str[res->len++] = chr;
+}
+
 char *readString(char *str, int *len) {
 	int i;
 	for (i = 0; str[i] != ';'; i++);

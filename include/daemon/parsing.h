@@ -7,6 +7,14 @@
 #define BUFFER_SIZE 256
 #define LINE_STR_SIZE 256
 #define DATA_BUFF_SIZE 64
+#define INFO_SIZE 512
+#define STR_RESULT_SIZE 512 - sizeof(int)
+
+typedef struct {
+	int len;
+	char str[STR_RESULT_SIZE];
+} OUT_STRING;
+
 
 typedef enum {
 	INT = 0,
@@ -73,6 +81,9 @@ void saveTableToFile(Data *data, char *name, char *dir);
 		exit(1);\
 	}\
 }
+
+void outStringBuilder(OUT_STRING *res, char *str);
+void outAddChar(OUT_STRING *res, char chr);
 
 //parsing
 Data *parseMainTable(FILE *fp, GPtrArray *colorArr, char *dir);

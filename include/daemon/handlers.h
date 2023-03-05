@@ -5,7 +5,7 @@
 
 //handlers
 typedef void handlerFunc(Data *, char *, int);
-void queryHandler(Data *data, char *query);
+void queryHandler(Data *data, char *query, OUT_STRING *res);
 void applyHandler(Data *data, char *info, int offset);
 void varHandler(Data *data, char *info, int offset);
 void subHandler(Data *data, char *info, int offset);

@@ -1,19 +1,43 @@
 #include "handlers.h"
 #include "display.h"
 #include "queries.h"
+#include <string.h>
 
-// format received: query<number>/<arg1>/<arg2>/...
+// format received: <number>/<arg1>/<arg2>/...
 // 0: lookup <name>/<subname> (subname only if it has sub tables)
 // 1: change to (not implemented) <theme>/<name>/<subname>
-void queryHandler(Data *data, char *info) {
+void queryHandler(Data *data, char *info, OUT_STRING *res) {
 	char *endptr;
-	int query = (int)strtol(info + 5, &endptr, 10);
+	int query = (int)strtol(info, &endptr, 10);
 	if (query != 0) {
 		printf("Only query 0 has been completed\n");
 		exit(1);
 	}
 	// no error checking, responsibility of user?
-	query0(data, endptr + 1); // skip numbers and '/'
+	query0(data, endptr + 1, res); // skip numbers and '/'
+}
+
+// input format: <theme>/<option>(<mode>)/...
+OUT_STRING * menuHandler(Data *data, char *original_info) {
+	if (original_info == NULL) { // ""
+		printMainOptions(data);
+	} else {
+		// when varHandler calls displayVar, what happens if string overflows????????
+		// info used big alloca just to be safe
+		char *info = alloca(sizeof(char) * INFO_SIZE);
+		strcpy(info, original_info);
+
+		int i;
+		for (i = 0; info[i] != '\0' && info[i] != '/'; i++);
+		if (info[i] == '\0') { // "theme<x>"
+			printThemeOptions(data, atoi(info + 5));
+		} else { // "theme<x>/option(<m>)/..." m can be 0(apply), 1(show_sub) or 2(show_var
+			int j;
+			for (j = i + 1; info[j] != '('; j++);
+			handlerFunc *handlers[] = {applyHandler, subHandler, varHandler, allHandler};
+			handlers[info[j + 1] - '0'](data, info, i + 1); // - '0' so that '1' == 1, etc
+		}
+	}
 }
 
 // input format: .../<option>(0)

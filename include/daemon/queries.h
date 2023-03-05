@@ -3,6 +3,6 @@
 
 #include "parsing.h"
 
-void query0(Data *data, char *info);
+void query0(Data *data, char *info, OUT_STRING *res);
 
 #endif
