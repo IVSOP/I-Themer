@@ -6,7 +6,7 @@
 #include "debug.h"
 
 #define TABLE_PATH "I-Themer/data/table.tb"
-#define INFO_SIZE 512
+// #define INFO_SIZE 512
 
 // SEE HOW POWERMENU SCRIPT HANDLES ICONS
 

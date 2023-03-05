@@ -18,9 +18,9 @@ void queryHandler(Data *data, char *info, OUT_STRING *res) {
 }
 
 // input format: <theme>/<option>(<mode>)/...
-OUT_STRING * menuHandler(Data *data, char *original_info) {
-	if (original_info == NULL) { // ""
-		printMainOptions(data);
+void menuHandler(Data *data, char *original_info, OUT_STRING *res) {
+	if (original_info[0] == '\0') { // ""
+		printMainOptions(data, res);
 	} else {
 		// when varHandler calls displayVar, what happens if string overflows????????
 		// info used big alloca just to be safe
@@ -30,12 +30,12 @@ OUT_STRING * menuHandler(Data *data, char *original_info) {
 		int i;
 		for (i = 0; info[i] != '\0' && info[i] != '/'; i++);
 		if (info[i] == '\0') { // "theme<x>"
-			printThemeOptions(data, atoi(info + 5));
+			printThemeOptions(data, atoi(info), res);
 		} else { // "theme<x>/option(<m>)/..." m can be 0(apply), 1(show_sub) or 2(show_var
 			int j;
 			for (j = i + 1; info[j] != '('; j++);
 			handlerFunc *handlers[] = {applyHandler, subHandler, varHandler, allHandler};
-			handlers[info[j + 1] - '0'](data, info, i + 1); // - '0' so that '1' == 1, etc
+			handlers[info[j + 1] - '0'](data, info, i + 1, res); // - '0' so that '1' == 1, etc
 		}
 	}
 }
@@ -44,7 +44,7 @@ OUT_STRING * menuHandler(Data *data, char *original_info) {
 // applies and goes back to previous menu
 // applying is slightly different in case of lists, it is done by varHandler
 // in case of sub, the data being passed is already the subtable
-void applyHandler(Data *data, char *info, int offset) {
+void applyHandler(Data *data, char *info, int offset, OUT_STRING *res) {
 	int i;
 	for (i = offset; info[i] != '('; i++);
 	info[i] = '\0';
@@ -64,7 +64,7 @@ void applyHandler(Data *data, char *info, int offset) {
 	// can either be var or sub, never apply
 	// or it can be theme
 	if (j + 1 == offset) { // previous menu is just the menu of a theme
-		printThemeOptions(data, theme);
+		printThemeOptions(data, theme, res);
 	} else { // previous menu is either sub or var (for now sub does nothing, it is assumed whoever calls this displays hte options itself)
 		for (i = offset - 2; info[i] != '/'; i--);
 		if (info[offset - 3] - '0' == SUB) { // sub
@@ -73,21 +73,21 @@ void applyHandler(Data *data, char *info, int offset) {
 			// for now, this will do nothing, since the apply of the new theme is correct but the display of previous data isn't
 			return;
 		} else { // var
-			varHandler(data, info, i + 1);
+			varHandler(data, info, i + 1, res);
 		}
 	}
 }
 
 // input format: .../<option>(2)/..., offset is first char after /
-void varHandler(Data *data, char *info, int offset) {
+void varHandler(Data *data, char *info, int offset, OUT_STRING *res) {
 	int i;
 	for (i = offset; info[i] != '\0' && info[i] != '/'; i++);
 	if (info[i] == '\0') { // ends here, nothing needs to be changed and options need to be displayed
-		displayVar(data, info, offset);
+		displayVar(data, info, offset, res);
 	} else { // does not end here
 		// call apply handler??????????????????????????????????????'
 		char *endptr;
-		long int res = strtol(info + i + 1, &endptr, 10);
+		long int resTheme = strtol(info + i + 1, &endptr, 10);
 		if (endptr != info + i + 1) { // .../<option>(2)/<x> need to apply changes
 			int j;
 			// same assumption as in displayVar
@@ -99,14 +99,14 @@ void varHandler(Data *data, char *info, int offset) {
 			// why does this not call changeTheme ????
 			int new_theme = atoi(info + 5);
 			Theme *theme = (Theme *)(dataobjarray->theme);
-			if (new_theme != theme->big || res != theme->small) {
+			if (new_theme != theme->big || resTheme != theme->small) {
 				// printf("changing theme from %d.%d to %d.%d\n", theme->big, theme->small, new_theme, (int)res);
 				theme->big = new_theme;
-				theme->small = (int)res;
+				theme->small = (int)resTheme;
 				// go back to before click
 			}
 			info[i] = '\0';
-			displayVar(data, info, offset);
+			displayVar(data, info, offset, res);
 		} else { // .../<option>(2)/<option>(<m>) need to keep displaying options
 			printf("Advanced recursion incomplete (%s)\n", __func__);
 			exit(1);
@@ -115,11 +115,11 @@ void varHandler(Data *data, char *info, int offset) {
 }
 
 // input format: .../<option>(1)/...
-void subHandler(Data *data, char *info, int offset) {
+void subHandler(Data *data, char *info, int offset, OUT_STRING *res) {
 	int i;
 	for (i = offset; info[i] != '\0' && info[i] != '/'; i++);
 	if (info[i] == '\0') { // ends here, nothing needs to be changed and options need to be displayed
-		displaySub(data, info, offset);
+		displaySub(data, info, offset, res);
 	} else { // .../<option>(1)/<option>(<m>) need to call apropriate function just like inputHandler would, but cant call it
 		int j;
 		for (j = offset; info[j] != '('; j++);
@@ -136,20 +136,20 @@ void subHandler(Data *data, char *info, int offset) {
 		switch ((info[j + 1] - '0'))
 		{
 		case APPLY: // apply
-			applyHandler(dataobjarray->dependency_table, info, i + 1); // I assume some magic happens here and a \0 is perfectly placed to allow to pass info + i + 1 next
+			applyHandler(dataobjarray->dependency_table, info, i + 1, res); // I assume some magic happens here and a \0 is perfectly placed to allow to pass info + i + 1 next
 			// magic is correct but offset is not
 			// ineficient but idc
 			for (i -= 1; info[i] != '/'; i--);
-			displaySub(data, info, i + 1);
+			displaySub(data, info, i + 1, res);
 			break;
 		case SUB: // sub
-			subHandler(dataobjarray->dependency_table, info, i + 1);
+			subHandler(dataobjarray->dependency_table, info, i + 1, res);
 			break;
 		case VAR: // var
-			varHandler(dataobjarray->dependency_table, info, i + 1);
+			varHandler(dataobjarray->dependency_table, info, i + 1, res);
 			break;
 		case ALL:
-			allHandler(dataobjarray->dependency_table, info, i + 1);
+			allHandler(dataobjarray->dependency_table, info, i + 1, res);
 			break;
 		}
 	}
@@ -157,24 +157,24 @@ void subHandler(Data *data, char *info, int offset) {
 
 // applies all options in a given table to a given theme, recursively
 // in case of array: applies first option
-void allHandler(Data *data, char *info, int offset) {
+void allHandler(Data *data, char *info, int offset, OUT_STRING *res) {
 	int theme = atoi(info + 5), i;
-	applyAll(data, theme);
+	applyAll(data, theme, res);
 
 	for (i = 0; info[i] != '/'; i++);
 	if (offset == i + 1) { // clicked all in the first menu of a theme
-		generateThemeOptions(data, theme);
+		generateThemeOptions(data, theme, res);
 	} else {
 		info[offset - 1] = '\0';
 		// displaySub(data, info, i + 1); this is bad because data is already the dependency table of something
 		// either: copy paste display sub but without using dependency table
 		// or: trace the entire path back to the menu it is supposed to be in -> bad because original table was lost, would have to parse again
-		displaySubWithoutDep(data, info, i + 1);
+		displaySubWithoutDep(data, info, i + 1, res);
 	}
 }
 
 // change to jump table??
-void applyAll(Data *data, int theme) {
+void applyAll(Data *data, int theme, OUT_STRING *res) {
 	GHashTableIter iter;
 	char *key = NULL;
 	DataObjArray *current = NULL;
@@ -197,7 +197,7 @@ void applyAll(Data *data, int theme) {
 			case SUB: // sub
 				// applies to all in subtable, then changes the theme to whatever the new most used theme is
 				// also updates data->active[]
-				applyAll(current->dependency_table, theme);
+				applyAll(current->dependency_table, theme, res);
 				old_theme = (long int)current->theme;
 				new_theme = getMostUsed(current->dependency_table);
 				// if (old_theme != new_theme) {

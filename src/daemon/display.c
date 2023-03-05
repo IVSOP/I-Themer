@@ -2,7 +2,7 @@
 
 // it is assumed data is already the dependency data
 // maybe use this more often and avoid an extra lookup??????
-void displaySubWithoutDep(Data *data, char *str, int offset) {
+void displaySubWithoutDep(Data *data, char *str, int offset, OUT_STRING *res) {
 	GHashTableIter iter;
 	char *key = NULL;
 	DataObjArray *current = NULL;
@@ -12,15 +12,15 @@ void displaySubWithoutDep(Data *data, char *str, int offset) {
 	char mode, *home = getenv("HOME"), *infostr;
 	g_hash_table_iter_init (&iter, data->main_table);
 
-	printf("All");
-	SEP1;
-	printf("info");
-	SEP2;
-	printf("%s/All(3)", str);
-	SEP2;
-	printf("icon");
-	SEP2;
-	printf("%s/%s\n", home, getColor(data, original_theme));
+	outStringBuilder(res, "All");
+	outAddChar(res, SEP1);
+	outStringBuilder(res, "info");
+	outAddChar(res, SEP2);
+	res->len += sprintf(res->str + res->len, "%s/All(3)", str);
+	outAddChar(res, SEP2);
+	outStringBuilder(res, "icon");
+	outAddChar(res, SEP2);
+	res->len += sprintf(res->str + res->len, "%s/%s\n", home, getColor(data, original_theme));
 
 	for (i = 0; g_hash_table_iter_next (&iter, (void **)&key, (void **)&current); i++)
 	{
@@ -30,39 +30,39 @@ void displaySubWithoutDep(Data *data, char *str, int offset) {
 		// check mode instead of type???
 		theme =	(mode == VAR) ? (((Theme *)(current->theme))->big) : (int)((long int)(current->theme));
 		active[i] = theme == original_theme ? 1 : 0;
-		printf("%s", infostr);
-		SEP1;
-		printf("info");
-		SEP2;
-		printf("%s/%s(%d)", str, infostr, mode);
-		SEP2;
-		printf("icon");
-		SEP2;
-		printf("%s/%s\n", home, getColor(data, theme));
+		res->len += sprintf(res->str + res->len, "%s", infostr);
+		outAddChar(res, SEP1);
+		outStringBuilder(res, "info");
+		outAddChar(res, SEP2);
+		res->len += sprintf(res->str + res->len, "%s/%s(%d)", str, infostr, mode);
+		outAddChar(res, SEP2);
+		outStringBuilder(res, "icon");
+		outAddChar(res, SEP2);
+		res->len += sprintf(res->str + res->len, "%s/%s\n", home, getColor(data, theme));
 	}
 
-	SEP1;
-	printf("active");
-	SEP2;
+	outAddChar(res, SEP2);
+	outStringBuilder(res, "active");
+	outAddChar(res, SEP1);
 	int j = i;
 	for (i = 0; i < j; i++) {
 		if (active[i] == 1) {
-			printf("%d,", i + 1);
+			res->len += sprintf(res->str + res->len, "%d,", i + 1);
 		}
 	}
 	
 	str[offset - 1] = '\0';
-	printf("\nBack");
-	SEP1;
-	printf("info");
-	SEP2;
-	printf("%s\n", str);
+	outStringBuilder(res, "\nBack");
+	outAddChar(res, SEP1);
+	outStringBuilder(res, "info");
+	outAddChar(res, SEP2);
+	res->len += sprintf(res->str + res->len, "%s\n", str);
 }
 
 // input format: .../<option>(2)/...
 // output format: <original info>/<option number>
 // displays list contained in list->arr[theme]
-void displayVar(Data *data, char *str, int offset) {
+void displayVar(Data *data, char *str, int offset, OUT_STRING *res) {
 	int i;
 	for (i = offset; str[i] != '('; i++);
 	str[i] = '\0';
@@ -76,12 +76,12 @@ void displayVar(Data *data, char *str, int offset) {
 	Theme *original_theme = (Theme *)(dataobjarray->theme);
 	DataObj *themeObj = &(dataobjarray->list->arr[theme]);
 	if (themeObj->type == EMPTY) {
-		printf("List is empty");
-		SEP1;
-		printf("info");
-		SEP2;
+		outStringBuilder(res, "List is empty");
+		outAddChar(res, SEP1);
+		outStringBuilder(res, "info");
+		outAddChar(res, SEP2);
 		str[offset - 1] = '\0';
-		printf("%s\n", str); //same as pressing "Back"
+		res->len += sprintf(res->str + res->len, "%s\n", str); //same as pressing "Back"
 		return;
 	}
 	//else
@@ -100,46 +100,46 @@ void displayVar(Data *data, char *str, int offset) {
 	if (strncmp(dataobjarray->name, "background", 10) == 0) {
 		for (i = 0; i < len; i++) {
 			current = &arr[i];
-			printDataObj(current);
-			SEP1;
-			printf("icon");
-			SEP2;
-			printf("%s/%s", home, (char *)current->info);
-			SEP2;
-			printf("info");
-			SEP2;
-			printf("%s/%d\n", str, i + 1);
+			printDataObj(current, res);
+			outAddChar(res, SEP1);
+			outStringBuilder(res, "icon");
+			outAddChar(res, SEP2);
+			res->len += sprintf(res->str + res->len, "%s/%s", home, (char *)current->info);
+			outAddChar(res, SEP2);
+			outStringBuilder(res, "info");
+			outAddChar(res, SEP2);
+			res->len += sprintf(res->str + res->len, "%s/%d\n", str, i + 1);
 		}
 	} else { // UNTESTED
 		for (i = 0; i < len; i++) {
 			current = &arr[i];
-			printDataObj(current);
-			SEP1;
-			printf("icon");
-			SEP2;
-			printf("%s/%s", home, getColor(data, original_theme->big));
-			SEP2;
-			printf("info");
-			SEP2;
-			printf("%s/%d\n", str, i + 1);
+			printDataObj(current, res);
+			outAddChar(res, SEP1);
+			outStringBuilder(res, "icon");
+			outAddChar(res, SEP2);
+			res->len += sprintf(res->str + res->len, "%s/%s", home, getColor(data, original_theme->big));
+			outAddChar(res, SEP2);
+			outStringBuilder(res, "info");
+			outAddChar(res, SEP2);
+			res->len += sprintf(res->str + res->len, "%s/%d\n", str, i + 1);
 		}
 	}
 	if (theme == original_theme->big) {
-		SEP1;
-		printf("active");
-		SEP2;
-		printf("%d\n", original_theme->small - 1);
+		outAddChar(res, SEP1);
+		outStringBuilder(res, "active");
+		outAddChar(res, SEP2);
+		res->len += sprintf(res->str + res->len, "%d\n", original_theme->small - 1);
 	}
 
 	str[offset - 1] = '\0';
-	printf("Back");
-	SEP1;
-	printf("info");
-	SEP2;
-	printf("%s\n", str);
+	outStringBuilder(res, "Back");
+	outAddChar(res, SEP1);
+	outStringBuilder(res, "info");
+	outAddChar(res, SEP2);
+	res->len += sprintf(res->str + res->len, "%s\n", str);
 }
 
-void displaySub(Data *data, char *str, int offset) {
+void displaySub(Data *data, char *str, int offset, OUT_STRING *res) {
 	int i;
 	for (i = offset; str[i] != '('; i++);
 	str[i] = '\0';
@@ -158,15 +158,15 @@ void displaySub(Data *data, char *str, int offset) {
 	char mode, *home = getenv("HOME"), *infostr;
 	g_hash_table_iter_init (&iter, dep->main_table);
 
-	printf("All");
-	SEP1;
-	printf("info");
-	SEP2;
-	printf("%s/All(3)", str);
-	SEP2;
-	printf("icon");
-	SEP2;
-	printf("%s/%s\n", home, getColor(data, original_theme));
+	outStringBuilder(res, "All");
+	outAddChar(res, SEP1);
+	outStringBuilder(res, "info");
+	outAddChar(res, SEP2);
+	res->len += sprintf(res->str + res->len, "%s/All(3)", str);
+	outAddChar(res, SEP2);
+	outStringBuilder(res, "icon");
+	outAddChar(res, SEP2);
+	res->len += sprintf(res->str + res->len, "%s/%s\n", home, getColor(data, original_theme));
 
 	for (i = 0; g_hash_table_iter_next (&iter, (void **)&key, (void **)&current); i++)
 	{
@@ -174,46 +174,46 @@ void displaySub(Data *data, char *str, int offset) {
 		infostr = current->name;
 		theme =	(mode == VAR) ? (((Theme *)(current->theme))->big) : (int)((long int)(current->theme));
 		active[i] = theme == original_theme ? 1 : 0;
-		printf("%s", infostr);
-		SEP1;
-		printf("info");
-		SEP2;
-		printf("%s/%s(%d)", str, infostr, mode);
-		SEP2;
-		printf("icon");
-		SEP2;
-		printf("%s/%s\n", home, getColor(data, theme));
+		res->len += sprintf(res->str + res->len, "%s", infostr);
+		outAddChar(res, SEP1);
+		outStringBuilder(res, "info");
+		outAddChar(res, SEP2);
+		res->len += sprintf(res->str + res->len, "%s/%s(%d)", str, infostr, mode);
+		outAddChar(res, SEP2);
+		outStringBuilder(res, "icon");
+		outAddChar(res, SEP2);
+		res->len += sprintf(res->str + res->len, "%s/%s\n", home, getColor(data, theme));
 	}
 
 	if (i == 0) { // maybe check before so the option "All" doesn't show up?
 		str[offset - 1] = '\0';
-		printf("No results");
-		SEP1;
-		printf("info");
-		SEP2;
-		printf("%s\n", str);
+		outStringBuilder(res, "No results");
+		outAddChar(res, SEP1);
+		outStringBuilder(res, "info");
+		outAddChar(res, SEP2);
+		res->len += sprintf(res->str + res->len, "%s\n", str);
 		return;
 	}
 
-	SEP1;
-	printf("active");
-	SEP2;
+	outAddChar(res, SEP1);
+	outStringBuilder(res, "active");
+	outAddChar(res, SEP2);
 	int j = i;
 	for (i = 0; i < j; i++) {
 		if (active[i] == 1) {
-			printf("%d,", i + 1);
+			res->len += sprintf(res->str + res->len, "%d,", i + 1);
 		}
 	}
 	
 	str[offset - 1] = '\0';
-	printf("\nBack");
-	SEP1;
-	printf("info");
-	SEP2;
-	printf("%s\n", str);
+	outStringBuilder(res, "\nBack");
+	outAddChar(res, SEP1);
+	outStringBuilder(res, "info");
+	outAddChar(res, SEP2);
+	res->len += sprintf(res->str + res->len, "%s\n", str);
 }
 
-void generateThemeOptions(Data *data, int selected_theme) {
+void generateThemeOptions(Data *data, int selected_theme, OUT_STRING *res) {
 	GHashTableIter iter;
 	char *key = NULL;
 	DataObjArray *current = NULL;
@@ -224,15 +224,16 @@ void generateThemeOptions(Data *data, int selected_theme) {
 	int mode;
 	char *home = getenv("HOME");
 
-	printf("All");
-	SEP1;
-	printf("info");
-	SEP2;
-	printf("theme%d/All(3)", selected_theme);
-	SEP2;
-	printf("icon");
-	SEP2;
-	printf("%s/%s\n", home, getColor(data, selected_theme));
+
+	outStringBuilder(res, "All");
+	outAddChar(res, SEP1);
+	outStringBuilder(res, "info");
+	outAddChar(res, SEP2);
+	res->len += sprintf(res->str + res->len, "theme%d/All(3)", selected_theme);
+	outAddChar(res, SEP2);
+	outStringBuilder(res, "icon");
+	outAddChar(res, SEP2);
+	res->len += sprintf(res->str + res->len, "%s/%s\n", home, getColor(data, selected_theme));
 
 	g_hash_table_iter_init (&iter, data->main_table);
 	for (i = 0; g_hash_table_iter_next (&iter, (void **)&key, (void **)&current); i++) {
@@ -244,91 +245,92 @@ void generateThemeOptions(Data *data, int selected_theme) {
 			} else {
 				theme = (int)((long int)(current->theme));
 			}
-			printf("%s", key);
+			res->len += sprintf(res->str + res->len, "%s", key);
 			if (mode == SUB) { // sub
-				printf(" --> %d/%d", current->dependency_table->active[selected_theme], getTableSize(current->dependency_table));
+				res->len += sprintf(res->str + res->len, " --> %d/%d", current->dependency_table->active[selected_theme], getTableSize(current->dependency_table));
 			}
-			SEP1;
-			printf("info");
-			SEP2;
-			printf("theme%d/%s(%d)", selected_theme, key, mode);
-			SEP2;
-			printf("icon");
-			SEP2;
+			outAddChar(res, SEP1);
+			outStringBuilder(res, "info");
+			outAddChar(res, SEP2);
+			res->len += sprintf(res->str + res->len, "theme%d/%s(%d)", selected_theme, key, mode);
+			outAddChar(res, SEP2);
+			outStringBuilder(res, "icon");
+			outAddChar(res, SEP2);
 
-			printf("%s/%s\n", home, getColor(data, theme));
+			res->len += sprintf(res->str + res->len, "%s/%s\n", home, getColor(data, theme));
 
 			active[i] = (theme == selected_theme) ? 1 : 0;
 	}
 
 	if (i == 0) {
 		// No info, will go straight to main menu
-		printf("No options available\n");
+		outStringBuilder(res, "No options available\n");
 		return;
 	}
 
-	SEP1;
-	printf("active");
-	SEP2;
+	outAddChar(res, SEP1);
+	outStringBuilder(res, "active");
+	outAddChar(res, SEP2);
 	int j = i;
 	for (i = 0; i < j; i++) {
 		if (active[i] == 1) {
-			printf("%d,", i + 1);
+			res->len += sprintf(res->str + res->len, "%d,", i + 1);
 		}
 	}
-	printf("\nBack\n");
+	outStringBuilder(res,"\nBack\n");
 	// info is not defined so it will be null and take you back to main menu
 
-	putchar('\n');
+	outAddChar(res, '\n');
 
 }
 
 // switch??? jump table???
 // WILL NOT put \n in the end
-void printDataObj(DataObj *data) {
+void printDataObj(DataObj *data, OUT_STRING *res) {
 	TYPE type = data->type;
 	if (type == INT) {
-		printf("%ld", (long int)data->info);
+		res->len += sprintf(res->str + res->len, "%ld", (long int)data->info);
 	} else if (type == STRING) {
-		printf("%s", (char *)data->info);
+		res->len += sprintf(res->str + res->len, "%s", (char *)data->info);
 	} else if (type == EMPTY) {
-		printf("Empty");
+		outStringBuilder(res, "Empty");
 	} else if (type == LIST) {
-		printf("Printing lists not implemented\n");
+		outStringBuilder(res, "Printing lists not implemented\n");
 		exit(1);
 	} else {
 		Theme *theme = (Theme *)data->info;
-		printf("%d.%d", theme->big, theme->small);
+		res->len += sprintf(res->str + res->len, "%d.%d", theme->big, theme->small);
 	}
 }
 
-void printMainOptions(Data *data) {
+void printMainOptions(Data *data, OUT_STRING *res) {
 	int i;
 	char * home = getenv("HOME");
 	int len = getNumberOfColors(data),
 	total = getTableSize(data);
 	for (i = 0; i < len; i++) {
-		printf("Theme %d --> %d/%d", i, getActivePerTheme(data, i), total);
-		SEP1;
-		printf("info");
-		SEP2;
-		printf("theme%d", i);
-		SEP2;
-		printf("icon");
-		SEP2;
-		printf("%s/%s\n", home, getColor(data, i));
+		// turn this into a function?? how, it has variable number of args
+		res->len += sprintf(res->str + res->len, "Theme %d --> %d/%d", i, getActivePerTheme(data, i), total);
+		outAddChar(res, SEP1);
+		outStringBuilder(res, "info");
+		outAddChar(res, SEP2);
+		res->len += sprintf(res->str + res->len, "theme%d", i);
+		outAddChar(res, SEP2);
+		outStringBuilder(res, "icon");
+		outAddChar(res, SEP2);
+		res->len += sprintf(res->str + res->len,"%s/%s\n", home, getColor(data, i));
 	}
-	SEP1;
-	printf("active");
-	SEP2;
-	printf("%d\n", getMostUsed(data));
+	outAddChar(res, SEP1);
+	outStringBuilder(res, "active");
+	outAddChar(res, SEP2);
+	res->len += sprintf(res->str + res->len,"%d\n", getMostUsed(data));
 }
 
-void printThemeOptions(Data *data, int theme) {
-	SEP1;
-	printf("prompt");
-	SEP2;
-	printf("Theme %d\n", theme);
+void printThemeOptions(Data *data, int theme, OUT_STRING *res) {
+	outAddChar(res, SEP1);
+	outStringBuilder(res, "prompt");
+	outAddChar(res, SEP2);
+	res->len += sprintf(res->str + res->len, "Theme %d\n", theme);
 
-	generateThemeOptions(data, theme);
+	generateThemeOptions(data, theme, res);
 }

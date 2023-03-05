@@ -28,16 +28,17 @@ INC_DIR_QUERY := include/query
 CC := gcc
 
 GLIBFLAGS := $(shell pkg-config --cflags --libs gobject-2.0)
-STD_FLAGS := $(GLIBFLAGS) -Wall -Wextra -pedantic -Wno-unused-parameter $(PROFILING_OPTS) # -lm -pthread -Wconversion
-MENU_FLAGS := -O2 -I$(INC_DIR_MENU) $(STD_FLAGS)
-DAEMON_FLAGS := -O2 -I$(INC_DIR_DAEMON) $(STD_FLAGS)
-QUERY_FLAGS := -O2 -I$(INC_DIR_QUERY) $(STD_FLAGS)
+STD_FLAGS := -O2 $(GLIBFLAGS) -Wall -Wextra -pedantic -Wno-unused-parameter $(PROFILING_OPTS) # -lm -pthread -Wconversion
+STD_DEBUG_FLAGS := -O0 -g3 $(GLIBFLAGS) -Wall -Wextra -pedantic -Wno-unused-parameter $(PROFILING_OPTS)
+MENU_FLAGS := -I$(INC_DIR_MENU) $(STD_FLAGS)
+DAEMON_FLAGS := -I$(INC_DIR_DAEMON) $(STD_FLAGS)
+QUERY_FLAGS := -I$(INC_DIR_QUERY) $(STD_FLAGS)
 
 # CFLAGS := -O2 $(STD_FLAGS)
 
-DEBUG_FLAGS_MENU := -O0 -g3 $(MENU_FLAGS) #-ggdb3
-DEBUG_FLAGS_DAEMON := -O0 -g3 $(DAEMON_FLAGS)
-DEBUG_FLAGS_QUERY := -O0 -g3 $(QUERY_FLAGS)
+DEBUG_FLAGS_MENU := -I$(INC_DIR_MENU) $(STD_DEBUG_FLAGS)
+DEBUG_FLAGS_DAEMON := -I$(INC_DIR_DAEMON) $(STD_DEBUG_FLAGS)
+DEBUG_FLAGS_QUERY := -I$(INC_DIR_QUERY) $(STD_DEBUG_FLAGS)
 
 LDFLAGS := $(PROFILING_OPTS)
 

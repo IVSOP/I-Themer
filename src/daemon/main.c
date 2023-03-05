@@ -177,14 +177,17 @@ int main (int argc, char **argv) {
 			perror("accept");
         	exit(EXIT_FAILURE);
 		}
+		// reset since it is reused
+		message->len = 0;
 		valread = read(client_fd, buffer, STR_RESULT_SIZE - 1);
-		if (valread) { // ??????????????????????
+		if (valread) {
 			buffer[valread] = '\0';
 			printf("Received %s, calling handler\n", buffer);
 			messageHandler(buffer, message);
-			printf("Final message is %s\n", message->str);
+			printf("Final message is:\n");
+			fflush(stdout);
+			write(STDOUT_FILENO, message->str, message->len);
 			// send(client_fd, message->str, message->len + 1, 0);
-			message->len = 0;
 			return 0;
 		}
     }

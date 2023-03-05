@@ -3,3 +3,5 @@ ithemer*
 .vscode*
 build/
 data/*
+data/
+bin/

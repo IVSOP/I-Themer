@@ -7,8 +7,8 @@
 #define BUFFER_SIZE 256
 #define LINE_STR_SIZE 256
 #define DATA_BUFF_SIZE 64
-#define INFO_SIZE 512
-#define STR_RESULT_SIZE 512 - sizeof(int)
+#define INFO_SIZE 1024
+#define STR_RESULT_SIZE INFO_SIZE - sizeof(int)
 
 typedef struct {
 	int len;
@@ -24,8 +24,8 @@ typedef enum {
 	LIST = 4, // stored as List *, not as Data *
 } TYPE;
 
-#define SEP1 putchar('\0')
-#define SEP2 putchar('\x1f')
+#define SEP1 '\0'
+#define SEP2 '\x1f'
 
 typedef struct DataObj DataObj;
 typedef struct Data Data;
