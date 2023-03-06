@@ -9,6 +9,9 @@
   
 int main(int argc, char const* argv[])
 {
+	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! because rofi only uses stdout
+	dup2(STDOUT_FILENO, STDERR_FILENO);  // redirects stderr to stdout below this line
+
     int status, valread, client_fd;
     struct sockaddr_in serv_addr;
     if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -50,7 +53,9 @@ int main(int argc, char const* argv[])
 
     // printf("Message received:\n");
 	// fflush(stdout);
-	write(STDOUT_FILENO, buffer, valread);
+	if (write(STDOUT_FILENO, buffer, valread) == -1) {
+		perror("Error writing data");
+	}
   
     // closing the connected socket
     close(client_fd);

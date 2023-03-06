@@ -18,6 +18,7 @@ static Data *data;
 static GPtrArray *colorArr;
 static int server_fd, client_fd;
 static OUT_STRING *message;
+static char *dir;
 
 // Signal handler function for SIGTERM
 
@@ -25,6 +26,7 @@ void sigterm_handler(int signum) {
     syslog(LOG_INFO, "Received SIGTERM signal. Terminating...");
 
 	// write data??????????????????????
+	saveTableToFile(data, "table", dir);
 	freeTableData(data);
 	g_ptr_array_free(colorArr, TRUE);
 
@@ -73,8 +75,14 @@ void messageHandler(char *buffer, OUT_STRING *res) {
 		sigterm_handler(SIGTERM);
 		break;
 	
+	case 'w': // write to file
+		saveTableToFile(data, "table", dir);
+		send(client_fd, "Saved", 5, 0);
+		break;
+	
 	default:
-		exit(EXIT_FAILURE);
+		break;
+		// exit(EXIT_FAILURE);
 
 	}
 }
@@ -88,7 +96,8 @@ int main (int argc, char **argv) {
 
 	//////////////////////////////////////////////// parsing theme file
 
-	parseData(argv[1]);
+	dir = argv[1];
+	parseData(dir);
 
 	//////////////////////////////////////////////// syslog and trapping
 
@@ -138,38 +147,38 @@ int main (int argc, char **argv) {
 
 	//////////////////////////////////////////////// creating daemon
 
-	pid_t pid, sid;
+	// pid_t pid, sid;
 
-    // Fork the process
-    pid = fork();
+    // // Fork the process
+    // pid = fork();
 
-    if (pid < 0) {
-        exit(EXIT_FAILURE);
-    }
+    // if (pid < 0) {
+    //     exit(EXIT_FAILURE);
+    // }
 
-    if (pid > 0) {
-        // Parent process
-        exit(EXIT_SUCCESS);
-    }
+    // if (pid > 0) {
+    //     // Parent process
+    //     exit(EXIT_SUCCESS);
+    // }
 
-    // Set file mode creation mask to 0
-    umask(0);
+    // // Set file mode creation mask to 0
+    // umask(0);
 
-    // Create a new session
-    sid = setsid();
-    if (sid < 0) {
-        exit(EXIT_FAILURE);
-    }
+    // // Create a new session
+    // sid = setsid();
+    // if (sid < 0) {
+    //     exit(EXIT_FAILURE);
+    // }
 
-    // Change the working directory to root
-    if (chdir("/") < 0) {
-        exit(EXIT_FAILURE);
-    }
+    // // Change the working directory to root
+    // if (chdir("/") < 0) {
+    //     exit(EXIT_FAILURE);
+    // }
 
-    // Close standard file descriptors
-    close(STDIN_FILENO);
-    close(STDOUT_FILENO);
-    close(STDERR_FILENO);
+    // // Close standard file descriptors
+    // close(STDIN_FILENO);
+    // close(STDOUT_FILENO);
+    // close(STDERR_FILENO);
 
 	//////////////////////////////////////////////// listen for requests on the socket
 

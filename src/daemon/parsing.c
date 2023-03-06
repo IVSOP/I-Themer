@@ -1,5 +1,4 @@
 #include "parsing.h"
-#include "rofi.h"
 #include "display.h"
 #include "debug.h"
 #include "handlers.h"
@@ -402,6 +401,7 @@ void outLine(DataObjArray *dataobjarray, FILE *fp, char *dir) {
 	}
 }
 
+// do not write .tb after name, it gets added already
 void saveTableToFile(Data *data, char *name, char *dir) {
 	char str[BUFFER_SIZE];
 	snprintf(str, BUFFER_SIZE, "%s/%s.tb", dir, name);
