@@ -9,6 +9,7 @@
 void queryHandler(Data *data, char *info, OUT_STRING *res) {
 	char *endptr;
 	int query = (int)strtol(info, &endptr, 10);
+	// no error checking with strtol??
 	if (query != 0) {
 		printf("Only query 0 has been completed\n");
 		exit(1);

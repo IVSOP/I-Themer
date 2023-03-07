@@ -124,8 +124,8 @@ int main (int argc, char **argv) {
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("socket failed");
         exit(EXIT_FAILURE);
-    }
-  
+	}
+
     // Forcefully attaching socket to the port 8080
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
         perror("setsockopt");
@@ -153,6 +153,7 @@ int main (int argc, char **argv) {
     // pid = fork();
 
     // if (pid < 0) {
+	// // error
     //     exit(EXIT_FAILURE);
     // }
 
@@ -190,11 +191,11 @@ int main (int argc, char **argv) {
 			perror("accept");
         	exit(EXIT_FAILURE);
 		}
-		// reset since it is reused
-		message->len = 0;
 
-		valread = read(client_fd, buffer, STR_RESULT_SIZE - 1);
-		if (valread) {
+		while ((valread = read(client_fd, buffer, STR_RESULT_SIZE - 1)) > 0) {
+			// reset since it is reused
+			message->len = 0;
+
 			buffer[valread] = '\0';
 			// printf("Received %s, calling handler\n", buffer);
 			messageHandler(buffer, message);
@@ -204,6 +205,8 @@ int main (int argc, char **argv) {
 			send(client_fd, message->str, message->len, 0);
 			// sigterm_handler(SIGTERM);
 		}
+		// here????
+		close(client_fd);
     }
 
     return 0;
