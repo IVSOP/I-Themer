@@ -41,14 +41,18 @@ void dumpDataObjArray(DataObjArray * data, long int depth) {
 	} else {
 		printf("%ld\n", (long int)data->theme);
 	}
-	
-	dumpList(data->list, depth);
 
-	if (data->dependency_table != NULL) {
-		printSpace(depth);
-		printf("Found dependency table\n");
-		dumpTable((Data *)data->dependency_table, depth + 4);
+	// sub have no data, but their subtables do
+	if (data->mode == SUB) {
+		if (data->dependency_table != NULL) {
+			printSpace(depth);
+			printf("Found dependency table\n");
+			dumpTable((Data *)data->dependency_table, depth + 4);
+		}
+	} else {
+		dumpList(data->list, depth);
 	}
+
 	printSpace(depth);
 	printf("[--------------[%ld]\n", depth);
 }

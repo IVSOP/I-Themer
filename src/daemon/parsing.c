@@ -405,6 +405,7 @@ void outLine(DataObjArray *dataobjarray, FILE *fp, char *dir) {
 void saveTableToFile(Data *data, char *name, char *dir) {
 	char str[BUFFER_SIZE];
 	snprintf(str, BUFFER_SIZE, "%s/%s.tb", dir, name);
+
 	FILE *fp = fopen(str, "w");
 	CHECK_FILE_ERROR(fp);
 

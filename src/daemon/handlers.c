@@ -11,8 +11,11 @@ void queryHandler(Data *data, char *info, OUT_STRING *res) {
 	int query = (int)strtol(info, &endptr, 10);
 	// no error checking with strtol??
 	if (query != 0) {
-		printf("Only query 0 has been completed\n");
-		exit(1);
+		// printf("Only query 0 has been completed\n");
+		// exit(1);
+		// got lazy ctrl+c ctrl+c'd from query0()
+		res->len = snprintf(res->str, STR_RESULT_SIZE - 1, "Only query 0 has been completed") + 1;
+		return;
 	}
 	// no error checking, responsibility of user?
 	query0(data, endptr + 1, res); // skip numbers and '/'
@@ -202,18 +205,20 @@ void applyAll(Data *data, int theme, OUT_STRING *res) {
 				old_theme = (long int)current->theme;
 				new_theme = getMostUsed(current->dependency_table);
 				// if (old_theme != new_theme) {
-				data->active[old_theme] -= 1;
-				data->active[new_theme] += 1;
+				active[old_theme] -= 1;
+				active[new_theme] += 1;
 				current->theme = (void *) ((long int)new_theme);
 				// }
-				break;
+				// break; // ???????????????????????????????????????????????????? works with or without it wtf
 		}
 	}
-	// calculate new max
+
+	// calculate new max (it is an index)
 	int i, max = 0;
 	for (i = 1; i < (const int)data->color_icons->len; i++) {
 		if (active[max] < active[i]) max = i;
 	}
+	// i will be len
 	active[i] = max;
 }
 
@@ -231,16 +236,16 @@ void changeThemeApply(DataObj *arr, void **old_theme, int theme, int *active) {
 // used to receive DataObj, now has to just receive old theme (change from x to y)
 void changeThemeVar(DataObj *arr, Theme *old_theme, int big, int small, int *active) {
 	// printf("%d %d %d %d\n", old_theme->big, big, old_theme->small, small);
-	if (old_theme->big != big || old_theme->small != small) {
+	if (old_theme->big != big || old_theme->small != small) { // check is not really needed but whatever
 		DataObj *infoObj = &arr[big];
-		if (infoObj->type != EMPTY) {
+		if (infoObj->type != EMPTY) { // list is empty
 			List *list = (List *)infoObj->info;
 			infoObj = &(list->arr[small - 1]);
-			if (infoObj->type != EMPTY) {
-				old_theme->big = big;
-				old_theme->small = small;
+			if (infoObj->type != EMPTY) { // list[x] is empty
 				active[old_theme->big] -= 1;
 				active[big] += 1;
+				old_theme->big = big;
+				old_theme->small = small;
 			}
 		}
 	}

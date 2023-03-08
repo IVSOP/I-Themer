@@ -9,10 +9,9 @@ void query0(Data *data, char *info, OUT_STRING *res) {
 	info[i] = '\0';
 	DataObjArray *dataobjarray = (DataObjArray *)g_hash_table_lookup(data->main_table, info);
 	if (dataobjarray == NULL) {
-		fprintf(stderr, "Error, '%s' not found in current table", info);
-		exit(EXIT_FAILURE);
-	}
-	if (tmp == '\0') { // print data
+		res->len = snprintf(res->str, STR_RESULT_SIZE - 1, "Error, '%s' not found in current table", info) + 1;
+		// exit(EXIT_FAILURE);
+	} else if (tmp == '\0') { // print data
 		// can only print strings and lists (of strings)
 		// no error checking done???
 

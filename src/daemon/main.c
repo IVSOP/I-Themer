@@ -21,7 +21,8 @@ static OUT_STRING *message;
 static char *dir;
 
 // Signal handler function for SIGTERM
-
+// SIGTERM cleans up and puts data into file
+// SIGKILL will just kill it without writing data (I assume)
 void sigterm_handler(int signum) {
     syslog(LOG_INFO, "Received SIGTERM signal. Terminating...");
 
@@ -77,7 +78,9 @@ void messageHandler(char *buffer, OUT_STRING *res) {
 	
 	case 'w': // write to file
 		saveTableToFile(data, "table", dir);
-		send(client_fd, "Saved", 5, 0);
+		res->len = 5;
+		strcpy(res->str, "Saved");
+		// send(client_fd, "Saved", 5, 0);
 		break;
 	
 	default:

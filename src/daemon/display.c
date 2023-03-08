@@ -245,7 +245,7 @@ void generateThemeOptions(Data *data, int selected_theme, OUT_STRING *res) {
 			} else {
 				theme = (int)((long int)(current->theme));
 			}
-			res->len += sprintf(res->str + res->len, "%s", key);
+			outStringBuilder(res, key);
 			if (mode == SUB) { // sub
 				res->len += sprintf(res->str + res->len, " --> %d/%d", current->dependency_table->active[selected_theme], getTableSize(current->dependency_table));
 			}
@@ -309,7 +309,6 @@ void printMainOptions(Data *data, OUT_STRING *res) {
 	int len = getNumberOfColors(data),
 	total = getTableSize(data);
 	for (i = 0; i < len; i++) {
-		// turn this into a function?? how, it has variable number of args
 		res->len += sprintf(res->str + res->len, "Theme %d --> %d/%d", i, getActivePerTheme(data, i), total);
 		outAddChar(res, SEP1);
 		outStringBuilder(res, "info");
