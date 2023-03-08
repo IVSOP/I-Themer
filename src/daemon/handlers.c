@@ -3,6 +3,8 @@
 #include "queries.h"
 #include <string.h>
 
+void calculateMaxUsed(int *active, unsigned int len);
+
 // format received: <number>/<arg1>/<arg2>/...
 // 0: lookup <name>/<subname> (subname only if it has sub tables)
 // 1: change to (not implemented) <theme>/<name>/<subname>
@@ -58,6 +60,9 @@ void applyHandler(Data *data, char *info, int offset, OUT_STRING *res) {
 	int theme = atoi(info + 5);
 	changeThemeApply(dataobjarray->list->arr, &dataobjarray->theme, theme, data->active);
 
+	// calculating new max
+	calculateMaxUsed(data->active, data->color_icons->len);
+
 	// back to previous menu
 	int j;
 	// checks if nothing relevant happened
@@ -100,16 +105,21 @@ void varHandler(Data *data, char *info, int offset, OUT_STRING *res) {
 			DataObjArray *dataobjarray = (DataObjArray *)g_hash_table_lookup(data->main_table, info + offset);
 			info[j] = '(';
 			// theme<x>...
-			// why does this not call changeTheme ????
+			// why does this not call changeTheme ???????????????????
 			int new_theme = atoi(info + 5);
 			Theme *theme = (Theme *)(dataobjarray->theme);
 			if (new_theme != theme->big || resTheme != theme->small) {
 				// printf("changing theme from %d.%d to %d.%d\n", theme->big, theme->small, new_theme, (int)res);
+				data->active[theme->big] -= 1;
+				data->active[new_theme] += 1;
 				theme->big = new_theme;
 				theme->small = (int)resTheme;
 				// go back to before click
 			}
 			info[i] = '\0';
+
+			calculateMaxUsed(data->active, data->color_icons->len);
+
 			displayVar(data, info, offset, res);
 		} else { // .../<option>(2)/<option>(<m>) need to keep displaying options
 			printf("Advanced recursion incomplete (%s)\n", __func__);
@@ -212,14 +222,7 @@ void applyAll(Data *data, int theme, OUT_STRING *res) {
 				// break; // ???????????????????????????????????????????????????? works with or without it wtf
 		}
 	}
-
-	// calculate new max (it is an index)
-	int i, max = 0;
-	for (i = 1; i < (const int)data->color_icons->len; i++) {
-		if (active[max] < active[i]) max = i;
-	}
-	// i will be len
-	active[i] = max;
+	calculateMaxUsed(data->active, data->color_icons->len);
 }
 
 void changeThemeApply(DataObj *arr, void **old_theme, int theme, int *active) {
@@ -233,7 +236,7 @@ void changeThemeApply(DataObj *arr, void **old_theme, int theme, int *active) {
 	}
 }
 
-// used to receive DataObj, now has to just receive old theme (change from x to y)
+// used to receive DataObj, now has to just receive old theme (change from x to y), since it is a Theme *
 void changeThemeVar(DataObj *arr, Theme *old_theme, int big, int small, int *active) {
 	// printf("%d %d %d %d\n", old_theme->big, big, old_theme->small, small);
 	if (old_theme->big != big || old_theme->small != small) { // check is not really needed but whatever
@@ -249,4 +252,16 @@ void changeThemeVar(DataObj *arr, Theme *old_theme, int big, int small, int *act
 			}
 		}
 	}
+}
+
+// gets saved into data->active[]
+void calculateMaxUsed(int *active, unsigned int len) {
+	// calculate new max (it is an index)
+	unsigned int i;
+	int max = 0;
+	for (i = 1; i < len; i++) {
+		if (active[max] < active[i]) max = i;
+	}
+	// i will be len
+	active[i] = max;
 }

@@ -10,6 +10,7 @@
 #include <string.h>
 #include "parsing.h"
 #include "handlers.h"
+#include "debug.h"
 
 #define PORT 8080
 
@@ -65,10 +66,10 @@ void parseData(char *dir) {
 void messageHandler(char *buffer, OUT_STRING *res) {
 	switch (buffer[0])
 	{
-	case 'q':
+	case 'q': // query
 		queryHandler(data, buffer + 2, res);
 		break;
-	case 'm':
+	case 'm': // menu
 		menuHandler(data, buffer + 2, res);
 		break;
 
@@ -76,11 +77,16 @@ void messageHandler(char *buffer, OUT_STRING *res) {
 		sigterm_handler(SIGTERM);
 		break;
 	
-	case 'w': // write to file
+	case 'w': // save to file (idk it probably uses $HOME to figure out the path)
 		saveTableToFile(data, "table", dir);
 		res->len = 5;
 		strcpy(res->str, "Saved");
 		// send(client_fd, "Saved", 5, 0);
+		break;
+
+	case 'd': // print debug of entire data, will not work in daemon mode as stdout is closed 
+		// will improve in the future to dump into a file
+		dumpTable(data, 0);
 		break;
 	
 	default:
@@ -150,39 +156,39 @@ int main (int argc, char **argv) {
 
 	//////////////////////////////////////////////// creating daemon
 
-	// pid_t pid, sid;
+	pid_t pid, sid;
 
-    // // Fork the process
-    // pid = fork();
+    // Fork the process
+    pid = fork();
 
-    // if (pid < 0) {
-	// // error
-    //     exit(EXIT_FAILURE);
-    // }
+    if (pid < 0) {
+	// error
+        exit(EXIT_FAILURE);
+    }
 
-    // if (pid > 0) {
-    //     // Parent process
-    //     exit(EXIT_SUCCESS);
-    // }
+    if (pid > 0) {
+        // Parent process
+        exit(EXIT_SUCCESS);
+    }
 
-    // // Set file mode creation mask to 0
-    // umask(0);
+    // Set file mode creation mask to 0
+    umask(0);
 
-    // // Create a new session
-    // sid = setsid();
-    // if (sid < 0) {
-    //     exit(EXIT_FAILURE);
-    // }
+    // Create a new session
+    sid = setsid();
+    if (sid < 0) {
+        exit(EXIT_FAILURE);
+    }
 
-    // // Change the working directory to root
-    // if (chdir("/") < 0) {
-    //     exit(EXIT_FAILURE);
-    // }
+    // Change the working directory to root
+    if (chdir("/") < 0) {
+        exit(EXIT_FAILURE);
+    }
 
-    // // Close standard file descriptors
-    // close(STDIN_FILENO);
-    // close(STDOUT_FILENO);
-    // close(STDERR_FILENO);
+    // Close standard file descriptors
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
 
 	//////////////////////////////////////////////// listen for requests on the socket
 
