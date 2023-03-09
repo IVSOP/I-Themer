@@ -30,11 +30,15 @@ void query0(Data *data, char *info, OUT_STRING *res) {
 				res->len += stpncpy(res->str + res->len, (char *)themeObj->info, STR_RESULT_SIZE - 1) - (res->str + res->len);
 			} else { // list, no checking for empty
 				const List *list = (List *)themeObj->info;
-				for (i = 0; i < list->len; i++) {
+				// check if len is 0??????????????????????????????????
+				for (i = 0; i < list->len - 1; i++) {
 					themeObj = &(list->arr[i]);
 					// printf("%s\n", (char *)themeObj->info);
 					res->len += stpncpy(res->str + res->len, (char *)themeObj->info, STR_RESULT_SIZE - 1) - (res->str + res->len);
+					outAddChar(res, '\n');
 				}
+				themeObj = &(list->arr[i]);
+				res->len += stpncpy(res->str + res->len, (char *)themeObj->info, STR_RESULT_SIZE - 1) - (res->str + res->len);
 			}
 		}
 	} else { // have to go into subadata

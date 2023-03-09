@@ -103,10 +103,6 @@ int main (int argc, char **argv) {
 		exit(EXIT_FAILURE);
 	}
 
-	//////////////////////////////////////////////// parsing theme file
-
-	dir = argv[1];
-	parseData(dir);
 
 	//////////////////////////////////////////////// syslog and trapping
 
@@ -153,6 +149,11 @@ int main (int argc, char **argv) {
         perror("listen");
         exit(EXIT_FAILURE);
     }
+
+	//////////////////////////////////////////////// parsing theme file
+
+	dir = argv[1];
+	parseData(dir);
 
 	//////////////////////////////////////////////// creating daemon
 
