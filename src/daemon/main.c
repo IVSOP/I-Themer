@@ -27,22 +27,21 @@ static char *dir;
 void sigterm_handler(int signum) {
     syslog(LOG_INFO, "Received SIGTERM signal. Terminating...");
 
-	// write data??????????????????????
-	saveTableToFile(data, "table", dir);
-	freeTableData(data);
-	g_ptr_array_free(colorArr, TRUE);
+	// saveTableToFile(data, "table", dir); // no time for anything else in case of shutdown apparently
+	// freeTableData(data);
+	// g_ptr_array_free(colorArr, TRUE);
 
-	// closing the connected socket
-    close(client_fd);
-    // closing the listening socket
-    // shutdown(server_fd, SHUT_RDWR);
-	close(server_fd);
+	// // closing the connected socket
+    // close(client_fd);
+    // // closing the listening socket
+    // // shutdown(server_fd, SHUT_RDWR);
+	// close(server_fd);
 
-	free(message);
+	// free(message);
 
-    // Close syslog connection
+    // // Close syslog connection
 
-    closelog();
+    // closelog();
     exit(0);
 }
 
@@ -87,6 +86,7 @@ void messageHandler(char *buffer, OUT_STRING *res) {
 	case 'd': // print debug of entire data, will not work in daemon mode as stdout is closed 
 		// will improve in the future to dump into a file
 		dumpTable(data, 0);
+		close(client_fd);
 		break;
 	
 	default:
@@ -111,12 +111,12 @@ int main (int argc, char **argv) {
 	//////////////////////////////////////////////// syslog and trapping
 
 	// Open a syslog connection
-    openlog("ithemer-daemon", LOG_PID, LOG_DAEMON);
+    openlog("ithemer-daemon", LOG_PID, LOG_LOCAL1); // LOG_DAEMON
 
 	struct sigaction sa;
     // Set signal handler for SIGTERM using sigaction
 	sa.sa_handler = sigterm_handler;
-    sigemptyset(&sa.sa_mask); // means that signals will not be blocked!!!!!!!!!!!!!!!!
+    sigemptyset(&sa.sa_mask); // means that signals will not be blocked??????????????
     sa.sa_flags = 0;
     if (sigaction(SIGTERM, &sa, NULL) == -1) {
         perror("Could not set SIGTERM handler");

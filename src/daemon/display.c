@@ -41,9 +41,9 @@ void displaySubWithoutDep(Data *data, char *str, int offset, OUT_STRING *res) {
 		res->len += sprintf(res->str + res->len, "%s/%s\n", home, getColor(data, theme));
 	}
 
-	outAddChar(res, SEP2);
-	outStringBuilder(res, "active");
 	outAddChar(res, SEP1);
+	outStringBuilder(res, "active");
+	outAddChar(res, SEP2);
 	int j = i;
 	for (i = 0; i < j; i++) {
 		if (active[i] == 1) {

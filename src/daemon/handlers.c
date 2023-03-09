@@ -147,9 +147,20 @@ void subHandler(Data *data, char *info, int offset, OUT_STRING *res) {
 		// see error in apply handler for explanation as to why this doesnt work
 		// handlerFunc *handlers[] = {applyHandler, subHandler, varHandler};
 		// handlers[(int)(info[j + 1] - 48)](dataobjarray->dependency_table, info, i + 1);
+
+		// is this bad? I dont want to have to pass data->active or data itself as an argument to these funtions
+		// there is a bug where if a subtable has options changed these will not reflect in the parent table
+		// since active[] does not get changed
+		// this is a fix, doesn't seem bad but not good either
+
+		unsigned int len = data->color_icons->len; // shared by dataobjarray->dependency_table->color-icons
+		int *data_active = data->active, *dataobjarray_active = dataobjarray->dependency_table->active;
+
+		int old_max = dataobjarray_active[len], new_max;
+
 		switch ((info[j + 1] - '0'))
 		{
-		case APPLY: // apply
+		case APPLY: // apply (this never even gets called wtf)
 			applyHandler(dataobjarray->dependency_table, info, i + 1, res); // I assume some magic happens here and a \0 is perfectly placed to allow to pass info + i + 1 next
 			// magic is correct but offset is not
 			// ineficient but idc
@@ -166,6 +177,18 @@ void subHandler(Data *data, char *info, int offset, OUT_STRING *res) {
 			allHandler(dataobjarray->dependency_table, info, i + 1, res);
 			break;
 		}
+
+		// change this to be the same as in applyHandler??
+
+		new_max = dataobjarray_active[len];
+		if (old_max != new_max) {
+			data_active[old_max] -= 1;
+			data_active[new_max] += 1;
+			calculateMaxUsed(data_active, len);
+		}
+
+		// forgor to update this too
+		dataobjarray->theme = (void *)((long int)new_max);
 	}
 }
 
@@ -188,6 +211,8 @@ void allHandler(Data *data, char *info, int offset, OUT_STRING *res) {
 }
 
 // change to jump table??
+// applies to all in subtable, then changes the theme to whatever the new most used theme is
+// also updates data->active[]
 void applyAll(Data *data, int theme, OUT_STRING *res) {
 	GHashTableIter iter;
 	char *key = NULL;
@@ -209,17 +234,18 @@ void applyAll(Data *data, int theme, OUT_STRING *res) {
 				changeThemeVar(current->list->arr, current->theme, theme, 1, active);
 				break;
 			case SUB: // sub
-				// applies to all in subtable, then changes the theme to whatever the new most used theme is
-				// also updates data->active[]
-				applyAll(current->dependency_table, theme, res);
+
+				// NOT TESTED
+
 				old_theme = (long int)current->theme;
+				applyAll(current->dependency_table, theme, res);
 				new_theme = getMostUsed(current->dependency_table);
 				// if (old_theme != new_theme) {
 				active[old_theme] -= 1;
 				active[new_theme] += 1;
 				current->theme = (void *) ((long int)new_theme);
 				// }
-				// break; // ???????????????????????????????????????????????????? works with or without it wtf
+				break;
 		}
 	}
 	calculateMaxUsed(data->active, data->color_icons->len);
