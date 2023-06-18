@@ -11,6 +11,7 @@
 #include "parsing.h"
 #include "handlers.h"
 #include "debug.h"
+#include <arpa/inet.h>
 
 #define PORT 8080
 
@@ -121,7 +122,8 @@ int main (int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
+	inet_pton(AF_INET, "127.14.14.14", &address.sin_addr);
+    //address.sin_addr.s_addr =  INADDR_ANY;
     address.sin_port = htons(PORT);
   
     // Forcefully attaching socket to the port 8080
