@@ -32,9 +32,10 @@ int main(int argc, char const* argv[])
         return -1;
     }
   
-    if ((status = connect(client_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr))) < 0) {
-        perror("Connection Failed");
-        return -1;
+    while ((status = connect(client_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr))) < 0) {
+        perror("Connection failed, retrying");
+        // return -1;
+		// sleep????????
     }
 
 	char buffer[1024];
@@ -46,7 +47,7 @@ int main(int argc, char const* argv[])
 		size = stpncpy(buffer + 2, argv[i], 1024 - 2 - 1) - buffer;
 		send(client_fd, buffer, size, 0);
 
-		// -1 to keep space for \n, -2 to reserve "q/"
+		// -1 to keep space for \n, -2 to reserve "q/" // is \n needed??? wtf
 		valread = read(client_fd, buffer + 2, 1024 - 1 - 2);
 		buffer[valread + 2] = '\n';
 		if (write(STDOUT_FILENO, buffer + 2, valread + 1) == -1) {

@@ -103,22 +103,6 @@ int main (int argc, char **argv) {
 		exit(EXIT_FAILURE);
 	}
 
-
-	//////////////////////////////////////////////// syslog and trapping
-
-	// Open a syslog connection
-    openlog("ithemer-daemon", LOG_PID, LOG_LOCAL1); // LOG_DAEMON
-
-	struct sigaction sa;
-    // Set signal handler for SIGTERM using sigaction
-	sa.sa_handler = sigterm_handler;
-    sigemptyset(&sa.sa_mask); // means that signals will not be blocked??????????????
-    sa.sa_flags = 0;
-    if (sigaction(SIGTERM, &sa, NULL) == -1) {
-        perror("Could not set SIGTERM handler");
-        exit(EXIT_FAILURE);
-    }
-
 	//////////////////////////////////////////////// creating socket
 
 	struct sockaddr_in address;
@@ -154,6 +138,21 @@ int main (int argc, char **argv) {
 
 	dir = argv[1];
 	parseData(dir);
+
+	//////////////////////////////////////////////// syslog and trapping
+
+	// Open a syslog connection
+    openlog("ithemer-daemon", LOG_PID, LOG_LOCAL1); // LOG_DAEMON
+
+	struct sigaction sa;
+    // Set signal handler for SIGTERM using sigaction
+	sa.sa_handler = sigterm_handler;
+    sigemptyset(&sa.sa_mask); // means that signals will not be blocked??????????????
+    sa.sa_flags = 0;
+    if (sigaction(SIGTERM, &sa, NULL) == -1) {
+        perror("Could not set SIGTERM handler");
+        exit(EXIT_FAILURE);
+    }
 
 	//////////////////////////////////////////////// creating daemon
 
