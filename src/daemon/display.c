@@ -86,6 +86,7 @@ void displayVar(Data *data, char *str, int offset, OUT_STRING *res) {
 	}
 	//else
 
+
 	List *list = (List *)(themeObj->info);
 	// check for empty can either be type == EMPTY or info == NULL
 
@@ -110,18 +111,19 @@ void displayVar(Data *data, char *str, int offset, OUT_STRING *res) {
 			outAddChar(res, SEP2);
 			res->len += sprintf(res->str + res->len, "%s/%d\n", str, i + 1);
 		}
-	} else { // UNTESTED
+	} else {
+		// background works when using icon first but this doesn't?? wtf????
 		for (i = 0; i < len; i++) {
 			current = &arr[i];
-			printDataObj(current, res);
+			printDataObj(current, res); // this is kind of bad, no need for it to be the entire path. allow for an alias or something???
 			outAddChar(res, SEP1);
-			outStringBuilder(res, "icon");
-			outAddChar(res, SEP2);
-			res->len += sprintf(res->str + res->len, "%s/%s", home, getColor(data, original_theme->big));
-			outAddChar(res, SEP2);
 			outStringBuilder(res, "info");
 			outAddChar(res, SEP2);
-			res->len += sprintf(res->str + res->len, "%s/%d\n", str, i + 1);
+			res->len += sprintf(res->str + res->len, "%s/%d", str, i + 1);
+			outAddChar(res, SEP2);
+			outStringBuilder(res, "icon");
+			outAddChar(res, SEP2);
+			res->len += sprintf(res->str + res->len, "%s/%s\n", home, getColor(data, original_theme->big));
 		}
 	}
 	if (theme == original_theme->big) {

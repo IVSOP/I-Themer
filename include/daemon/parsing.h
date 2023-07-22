@@ -33,15 +33,30 @@ typedef struct DataObjArray DataObjArray;
 typedef struct Theme Theme;
 typedef struct List List;
 
-struct DataObj {
-	void *info;
-	TYPE type;
-};
+typedef enum {
+	APPLY = 0, // apply the option
+	SUB = 1, // recurse into subtable
+	VAR = 2, // recurse into array of options
+	ALL = 3, // apply all (??)
+} Mode;
 
+// represents a table, with all data from a .tb file
 struct Data {
 	GHashTable *main_table;
 	GPtrArray *color_icons;
-	int *active;
+	int *active; // array to check what is active. len is number of themes + 1
+	// active[max_index] is the currently most used theme
+	// active[i] shows how many options are selected from theme i
+	// each table has this
+};
+
+//contains data from an entire line
+struct DataObjArray {
+	char *name;
+	Mode mode;
+	void *theme;
+	List *list; // data contained in that line
+	Data * dependency_table; // (optional) table to recurse into for further options
 };
 
 struct List {
@@ -49,20 +64,10 @@ struct List {
 	int len;
 };
 
-typedef enum {
-	APPLY = 0,
-	SUB = 1,
-	VAR = 2,
-	ALL = 3,
-} Mode;
-
-//contains data from an entire line
-struct DataObjArray {
-	char *name;
-	Mode mode;
-	void *theme;
-	List *list;
-	Data * dependency_table;
+// smallest data struct of the table
+struct DataObj {
+	void *info;
+	TYPE type;
 };
 
 struct Theme {
