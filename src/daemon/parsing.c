@@ -178,9 +178,14 @@ DataObjArray *parseLineString(char *str, ssize_t strlen) {
 DataObjArray *parseLine(FILE *fp) {
 	char *linestr = NULL;
 	size_t buffsiz = 0;
-	ssize_t len_chars = getline(&linestr, &buffsiz, fp);
+	ssize_t len_chars;
 
-	if (len_chars == -1 || len_chars == 1) { // EOF and empty line, respectively (is EOF check needed??)
+	// this loop is to ignore newlines
+	do {
+		len_chars = getline(&linestr, &buffsiz, fp);
+	} while (len_chars == 1);
+	
+	if (len_chars == -1) { // EOF (is EOF check needed??)
 		free(linestr);
 		return NULL;
 	}
@@ -189,7 +194,7 @@ DataObjArray *parseLine(FILE *fp) {
 
 	free(linestr);
 	return res;
-	buffsiz = buffsiz;
+	buffsiz = buffsiz; // ?????
 }
 
 inline int getThemeBig(DataObj *themeobj) {

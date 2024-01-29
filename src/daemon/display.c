@@ -115,7 +115,7 @@ void displayVar(Data *data, char *str, int offset, OUT_STRING *res) {
 		// background works when using icon first but this doesn't?? wtf????
 		for (i = 0; i < len; i++) {
 			current = &arr[i];
-			printDataObj(current, res); // this is kind of bad, no need for it to be the entire path. allow for an alias or something???
+			printDataObj(current, res);
 			outAddChar(res, SEP1);
 			outStringBuilder(res, "info");
 			outAddChar(res, SEP2);
